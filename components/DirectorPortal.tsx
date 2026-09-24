@@ -100,7 +100,7 @@ export function DirectorPortal({ onOpenAiAssistant, onOpenPricing }: DirectorPor
             onClick={onOpenPricing}
             className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
           >
-            Gérer l'abonnement SaaS
+            Gérer la souscription
           </button>
           <button
             onClick={onOpenAiAssistant}

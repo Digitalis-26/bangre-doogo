@@ -20,6 +20,7 @@ import { UsersAdminView } from '@/components/UsersAdminView';
 import { AuthModal } from '@/components/AuthModal';
 import { AiAnnouncementModal } from '@/components/AiAnnouncementModal';
 import { SmsSimulatorModal } from '@/components/SmsSimulatorModal';
+import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { MobileSimulatorFrame } from '@/components/MobileSimulatorFrame';
 import { ShieldCheck, MapPin, Heart, Sparkles } from 'lucide-react';
 
@@ -28,6 +29,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   const handleApplyAiDraft = (draft: { title: string; content: string; smsVersion: string }) => {
     publishAnnouncement({
@@ -59,7 +61,7 @@ function AppContent() {
         setActiveTab={setActiveTab}
         onOpenAiAssistant={() => setIsAiModalOpen(true)}
         onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-        onOpenPricing={() => setActiveTab('pricing')}
+        onOpenPricing={() => setIsSubscriptionModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -68,7 +70,7 @@ function AppContent() {
         {activeTab === 'dashboard' && (
           <HeroSection
             onExploreRole={handleExploreRole}
-            onOpenPricing={() => setActiveTab('pricing')}
+            onOpenPricing={() => setIsSubscriptionModalOpen(true)}
             onOpenAiAssistant={() => setIsAiModalOpen(true)}
           />
         )}
@@ -86,7 +88,7 @@ function AppContent() {
               {(currentRole === 'director' || currentRole === 'secretary') && (
                 <DirectorPortal
                   onOpenAiAssistant={() => setIsAiModalOpen(true)}
-                  onOpenPricing={() => setActiveTab('pricing')}
+                  onOpenPricing={() => setIsSubscriptionModalOpen(true)}
                 />
               )}
               {currentRole === 'super_admin' && <SuperAdminPortal />}
@@ -127,13 +129,16 @@ function AppContent() {
           {activeTab === 'liaison' && <LiaisonView />}
 
           {activeTab === 'users_admin' && <UsersAdminView />}
-
-          {activeTab === 'pricing' && <PricingSection />}
         </MobileSimulatorFrame>
       </main>
 
       {/* Global Interactive Modals */}
       <AuthModal />
+
+      <SubscriptionModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+      />
 
       <AiAnnouncementModal
         isOpen={isAiModalOpen}
@@ -161,12 +166,6 @@ function AppContent() {
           </div>
 
           <div className="flex items-center gap-6">
-            <button
-              onClick={() => setActiveTab('pricing')}
-              className="hover:text-slate-900 cursor-pointer"
-            >
-              Tarifs B2B
-            </button>
             <button
               onClick={() => setIsSmsModalOpen(true)}
               className="hover:text-slate-900 cursor-pointer"

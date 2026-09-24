@@ -308,17 +308,6 @@ export function Navbar({
               </div>
             )}
           </div>
-
-          <button
-            onClick={onOpenPricing}
-            className={`cursor-pointer transition-colors py-1 ${
-              activeTab === 'pricing'
-                ? 'text-emerald-700 border-b-2 border-emerald-600'
-                : 'hover:text-slate-900'
-            }`}
-          >
-            Tarifs B2B
-          </button>
         </nav>
 
         {/* Actions & Role Switcher */}

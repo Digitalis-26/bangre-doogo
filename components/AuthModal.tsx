@@ -25,6 +25,8 @@ export function AuthModal() {
     resetPassword,
     schools,
     currentSchool,
+    saasPlans,
+    updateSchoolPlan,
   } = useSchool();
 
   // Form states
@@ -34,6 +36,7 @@ export function AuthModal() {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('parent');
   const [schoolId, setSchoolId] = useState(currentSchool.id);
+  const [selectedPlanId, setSelectedPlanId] = useState<'free' | 'main' | 'advanced'>('free');
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   if (!authModalOpen) return null;
@@ -56,6 +59,9 @@ export function AuthModal() {
     e.preventDefault();
     if (!name || !email || !phone) return;
     const res = signup({ name, email, phone, role, schoolId });
+    if (role === 'director' || role === 'secretary') {
+      updateSchoolPlan(schoolId, selectedPlanId);
+    }
     setFeedback(res);
     if (res.success) {
       setTimeout(() => {
@@ -297,6 +303,44 @@ export function AuthModal() {
                 ))}
               </select>
             </div>
+
+            {/* Plan selection visible during subscription for school administration */}
+            {(role === 'director' || role === 'secretary') && (
+              <div className="space-y-2 pt-2 border-t border-slate-200">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Formule d'abonnement de l'école
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {saasPlans.map((plan) => {
+                    const isSelected = selectedPlanId === plan.id;
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedPlanId(plan.id)}
+                        className={`p-2.5 rounded-xl border-2 text-left cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-emerald-600 bg-emerald-50/40 shadow-xs'
+                            : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-xs text-slate-900">{plan.name}</span>
+                          {isSelected && (
+                            <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                          )}
+                        </div>
+                        <div className="font-mono font-bold text-xs text-emerald-800">
+                          {plan.price === 0 ? '0 FCFA' : `${plan.price.toLocaleString('fr-FR')} F/mois`}
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1 leading-tight">
+                          {plan.classesLimit}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"

@@ -29,12 +29,6 @@ export function HeroSection({ onExploreRole, onOpenPricing, onOpenAiAssistant }:
       <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-4xl space-y-6">
-        {/* Kicker badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
-          <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
-          <span>SaaS Éducatif Déployable au Burkina Faso & Afrique de l'Ouest</span>
-        </div>
-
         {/* Headline */}
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
           La communication école-parents, simplifiée.
@@ -80,33 +74,16 @@ export function HeroSection({ onExploreRole, onOpenPricing, onOpenAiAssistant }:
           >
             <span>Direction</span>
           </button>
-
-          <button
-            onClick={onOpenPricing}
-            className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-          >
-            <span>Tarifs B2B</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </div>
 
         {/* Proof / Value Metrics Row */}
-        <div className="pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tabular-nums">
-              0 FCFA
-            </div>
-            <div className="text-slate-400 text-[11px]">
-              Offre Découverte
-            </div>
-          </div>
-
+        <div className="pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
           <div>
             <div className="text-xl sm:text-2xl font-black text-white font-mono tabular-nums">
               100%
             </div>
             <div className="text-slate-400 text-[11px]">
-              Gratuit pour les parents
+              Gratuit pour les familles
             </div>
           </div>
 
