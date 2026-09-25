@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Calendar,
   Filter,
+  ShieldAlert,
 } from 'lucide-react';
 
 export function StudentsView() {
@@ -22,10 +23,20 @@ export function StudentsView() {
     enrollStudent,
     transferStudentClass,
     activeAcademicYear,
+    currentRole,
+    currentUser,
   } = useSchool();
 
+  const isTeacher = currentRole === 'teacher';
+  const isStaff = currentRole === 'director' || currentRole === 'secretary' || currentRole === 'super_admin';
+
+  // Teacher assigned class
+  const teacherClass = classes.find((c) => c.teacherId === currentUser.id) || classes[0];
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedClassFilter, setSelectedClassFilter] = useState('all');
+  const [selectedClassFilter, setSelectedClassFilter] = useState(
+    isTeacher ? teacherClass?.id || 'all' : 'all'
+  );
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [transferTargetStudent, setTransferTargetStudent] = useState<any | null>(null);
   const [newClassId, setNewClassId] = useState('');
@@ -40,8 +51,25 @@ export function StudentsView() {
   const [guardianPhone, setGuardianPhone] = useState('');
   const [guardianName, setGuardianName] = useState('');
 
+  // Parent guard
+  if (currentRole === 'parent') {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-4 max-w-lg mx-auto">
+        <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900">Accès Restreint</h2>
+        <p className="text-xs text-slate-600">
+          L'annuaire général des élèves est strictement réservé au personnel enseignant et administratif.
+          Pour consulter le dossier de vos enfants, rendez-vous dans l'<strong>Espace Famille</strong>.
+        </p>
+      </div>
+    );
+  }
+
   const filteredStudents = students.filter((st) => {
-    if (selectedClassFilter !== 'all' && st.classId !== selectedClassFilter) return false;
+    if (isTeacher && st.classId !== teacherClass?.id) return false;
+    if (!isTeacher && selectedClassFilter !== 'all' && st.classId !== selectedClassFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -92,21 +120,32 @@ export function StudentsView() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              {isTeacher ? 'Espace Enseignant' : 'Gestion Administrative'}
+            </span>
+          </div>
           <h1 className="text-xl font-bold text-slate-900">
-            Registre des Élèves & Inscriptions
+            {isTeacher
+              ? `Élèves de ma classe (${teacherClass?.name || 'Classe'})`
+              : 'Registre des Élèves & Inscriptions'}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Gestion des matricules officiels, codes secrets bulletins et mutations de classe · Année {activeAcademicYear.name}
+            {isTeacher
+              ? `Consultation des ${filteredStudents.length} élèves inscrits dans votre classe et coordonnées des tuteurs légaux.`
+              : `Gestion des matricules officiels, codes secrets bulletins et mutations de classe · Année ${activeAcademicYear.name}`}
           </p>
         </div>
 
-        <button
-          onClick={() => setShowEnrollModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-sm transition-colors cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Inscrire un nouvel élève</span>
-        </button>
+        {isStaff && (
+          <button
+            onClick={() => setShowEnrollModal(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-sm transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Inscrire un nouvel élève</span>
+          </button>
+        )}
       </div>
 
       {feedback && (
@@ -119,19 +158,27 @@ export function StudentsView() {
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <select
-            value={selectedClassFilter}
-            onChange={(e) => setSelectedClassFilter(e.target.value)}
-            className="text-xs p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
-          >
-            <option value="all">Toutes les classes ({students.length} élèves)</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+          {isStaff ? (
+            <>
+              <Filter className="w-4 h-4 text-slate-400" />
+              <select
+                value={selectedClassFilter}
+                onChange={(e) => setSelectedClassFilter(e.target.value)}
+                className="text-xs p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
+              >
+                <option value="all">Toutes les classes ({students.length} élèves)</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <div className="text-xs font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+              Classe : {teacherClass?.name} ({filteredStudents.length} élèves)
+            </div>
+          )}
         </div>
 
         <div className="relative w-full md:w-72">
@@ -152,18 +199,19 @@ export function StudentsView() {
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[11px] tracking-wider">
-                <th className="py-3 px-4">Élève</th>
-                <th className="py-3 px-4">Matricule</th>
-                <th className="py-3 px-4">Classe actuelle</th>
-                <th className="py-3 px-4">Parent / Tuteur</th>
-                <th className="py-3 px-4 text-right">Mutation</th>
+                <th className="py-3 px-4">Élève & Genre</th>
+                <th className="py-3 px-4">Classe</th>
+                <th className="py-3 px-4">Matricule Officiel</th>
+                <th className="py-3 px-4">Code Bulletin</th>
+                <th className="py-3 px-4">Tuteur & Téléphone</th>
+                {isStaff && <th className="py-3 px-4 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-slate-500">
-                    Aucun élève trouvé dans cette classe.
+                  <td colSpan={isStaff ? 6 : 5} className="py-8 text-center text-slate-500">
+                    Aucun élève trouvé.
                   </td>
                 </tr>
               ) : (
@@ -173,14 +221,12 @@ export function StudentsView() {
                       <div className="font-bold text-slate-900">
                         {st.firstName} {st.lastName}
                       </div>
-                      <div className="text-[11px] text-slate-500">
-                        Sexe : {st.gender === 'M' ? 'Garçon' : 'Fille'}
-                        {st.birthDate ? ` · Né(e) le ${formatDate(st.birthDate)}` : ''}
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span className={`px-1.5 py-0.2 rounded font-semibold text-[10px] ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                          {st.gender === 'F' ? 'Fille' : 'Garçon'}
+                        </span>
+                        {st.birthDate && <span>Né(e) le {st.birthDate}</span>}
                       </div>
-                    </td>
-
-                    <td className="py-3 px-4 font-mono font-semibold text-slate-700">
-                      {st.matricule}
                     </td>
 
                     <td className="py-3 px-4">
@@ -189,26 +235,38 @@ export function StudentsView() {
                       </span>
                     </td>
 
+                    <td className="py-3 px-4 font-mono font-bold text-emerald-800">
+                      {st.matricule}
+                    </td>
+
+                    <td className="py-3 px-4 font-mono text-slate-700">
+                      <span className="bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded text-[11px] font-bold">
+                        {st.verificationCode}
+                      </span>
+                    </td>
+
                     <td className="py-3 px-4">
-                      <div className="text-slate-800">{st.guardianName || 'Tuteur légal'}</div>
-                      <div className="text-[11px] font-mono text-slate-500 flex items-center gap-1 mt-0.5">
+                      <div className="font-medium text-slate-900">{st.guardianName || 'Tuteur légal'}</div>
+                      <div className="text-slate-500 font-mono text-[11px] flex items-center gap-1 mt-0.5">
                         <Phone className="w-3 h-3 text-slate-400" />
                         <span>{st.guardianPhone}</span>
                       </div>
                     </td>
 
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => {
-                          setTransferTargetStudent(st);
-                          setNewClassId(st.classId);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-md transition-colors cursor-pointer border border-slate-200"
-                      >
-                        <ArrowRightLeft className="w-3 h-3 text-emerald-600" />
-                        <span>Changer de classe</span>
-                      </button>
-                    </td>
+                    {isStaff && (
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => {
+                            setTransferTargetStudent(st);
+                            setNewClassId(st.classId);
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-md transition-colors cursor-pointer border border-slate-200"
+                        >
+                          <ArrowRightLeft className="w-3 h-3 text-emerald-600" />
+                          <span>Changer de classe</span>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -217,8 +275,8 @@ export function StudentsView() {
         </div>
       </div>
 
-      {/* Modal: Enroll New Student */}
-      {showEnrollModal && (
+      {/* Modal: Enroll New Student (Staff only) */}
+      {showEnrollModal && isStaff && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative my-8">
             <h3 className="text-base font-bold text-slate-900 mb-1">
@@ -282,68 +340,71 @@ export function StudentsView() {
                     type="date"
                     value={birthDate}
                     onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg font-mono"
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-lg"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Classe d'affectation
+                  Classe d'affectation <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={classId}
                   onChange={(e) => setClassId(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                  required
                 >
                   {classes.map((cls) => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.teacherName})
+                      {cls.name} ({cls.gradeLevel})
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nom du parent ou tuteur
-                </label>
-                <input
-                  type="text"
-                  value={guardianName}
-                  onChange={(e) => setGuardianName(e.target.value)}
-                  placeholder="Ex: M. Ousmane Sawadogo"
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-lg"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nom du responsable
+                  </label>
+                  <input
+                    type="text"
+                    value={guardianName}
+                    onChange={(e) => setGuardianName(e.target.value)}
+                    placeholder="Ex: Ousmane Sawadogo"
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Téléphone SMS (urgent) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={guardianPhone}
+                    onChange={(e) => setGuardianPhone(e.target.value)}
+                    placeholder="+226 70 XX XX XX"
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-mono"
+                    required
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Téléphone du parent (Alertes SMS) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={guardianPhone}
-                  onChange={(e) => setGuardianPhone(e.target.value)}
-                  placeholder="+226 78 90 12 34"
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-mono"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowEnrollModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg cursor-pointer"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
                 >
-                  Valider l'inscription
+                  Confirmer l'inscription
                 </button>
               </div>
             </form>
@@ -351,15 +412,15 @@ export function StudentsView() {
         </div>
       )}
 
-      {/* Modal: Transfer / Change Class */}
-      {transferTargetStudent && (
+      {/* Modal: Transfer Class (Staff only) */}
+      {transferTargetStudent && isStaff && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-5 shadow-2xl relative">
-            <h3 className="text-sm font-bold text-slate-900 mb-1">
-              Changement / Mutation de classe
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Changement de classe
             </h3>
-            <p className="text-xs text-slate-500 mb-3">
-              Déplacer <strong>{transferTargetStudent.firstName} {transferTargetStudent.lastName}</strong> ({transferTargetStudent.className})
+            <p className="text-xs text-slate-500 mb-4">
+              Déplacer {transferTargetStudent.firstName} {transferTargetStudent.lastName}
             </p>
 
             <form onSubmit={handleTransferSubmit} className="space-y-3">
@@ -374,7 +435,7 @@ export function StudentsView() {
                 >
                   {classes.map((cls) => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} (Actuellement {cls.studentsCount} élèves)
+                      {cls.name}
                     </option>
                   ))}
                 </select>
@@ -384,15 +445,15 @@ export function StudentsView() {
                 <button
                   type="button"
                   onClick={() => setTransferTargetStudent(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg cursor-pointer"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
                 >
-                  Confirmer la mutation
+                  Valider la mutation
                 </button>
               </div>
             </form>

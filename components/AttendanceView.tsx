@@ -16,6 +16,9 @@ import {
   FileCheck,
   Check,
   X,
+  ShieldCheck,
+  Heart,
+  Plus,
 } from 'lucide-react';
 
 export function AttendanceView() {
@@ -29,41 +32,72 @@ export function AttendanceView() {
     reviewAbsenceJustification,
     currentUser,
     currentRole,
+    myChildren,
   } = useSchool();
 
-  const [selectedClassId, setSelectedClassId] = useState<string>('all');
+  // Role permissions
+  const isParent = currentRole === 'parent';
+  const isTeacher = currentRole === 'teacher';
+  const isDirector = currentRole === 'director' || currentRole === 'secretary' || currentRole === 'super_admin';
+
+  // Teacher assigned class
+  const teacherClass = classes.find((c) => c.teacherId === currentUser.id) || classes[0];
+
+  const [selectedClassId, setSelectedClassId] = useState<string>(
+    isTeacher ? teacherClass?.id || 'all' : 'all'
+  );
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<'all' | 'absent' | 'late'>('all');
   const [searchStudent, setSearchStudent] = useState('');
 
-  // Quick Absence Recording state
+  // Quick Absence Recording state (Staff only)
   const [showAddModal, setShowAddModal] = useState(false);
-  const [targetStudentId, setTargetStudentId] = useState(students[0]?.id || '');
+  const staffSelectableStudents = isTeacher
+    ? students.filter((s) => s.classId === teacherClass?.id)
+    : students;
+  const [targetStudentId, setTargetStudentId] = useState(staffSelectableStudents[0]?.id || '');
   const [attStatus, setAttStatus] = useState<'absent' | 'late'>('absent');
   const [session, setSession] = useState<'Matin' | 'Après-midi'>('Matin');
   const [reason, setReason] = useState('');
   const [duration, setDuration] = useState(15);
   const [isJustified, setIsJustified] = useState(false);
 
-  // Justification Review Modal state
+  // Justification Modal states
   const [selectedRecordForJustify, setSelectedRecordForJustify] = useState<any | null>(null);
   const [customJustificationText, setCustomJustificationText] = useState('');
+  const [justificationPreset, setJustificationPreset] = useState('Maladie / Paludisme');
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Filter attendance
+  // Filter attendance records based strictly on role
   const filteredRecords = attendance.filter((rec) => {
-    if (selectedClassId !== 'all' && rec.classId !== selectedClassId) return false;
+    // Parent restriction: ONLY records of the parent's children
+    if (isParent) {
+      const isMyChild = myChildren.some((c) => c.id === rec.studentId);
+      if (!isMyChild) return false;
+    }
+
+    // Teacher restriction: ONLY records of their class
+    if (isTeacher) {
+      if (rec.classId !== teacherClass?.id) return false;
+    }
+
+    // Director / General filters
+    if (!isParent && !isTeacher && selectedClassId !== 'all' && rec.classId !== selectedClassId) {
+      return false;
+    }
+
     if (selectedStatusFilter !== 'all' && rec.status !== selectedStatusFilter) return false;
     if (searchStudent && !rec.studentName.toLowerCase().includes(searchStudent.toLowerCase())) return false;
     return true;
   });
 
-  const totalAbsents = attendance.filter((a) => a.status === 'absent').length;
-  const totalLates = attendance.filter((a) => a.status === 'late').length;
-  const pendingJustifications = attendance.filter((a) => a.justificationStatus === 'pending').length;
+  const totalAbsents = filteredRecords.filter((a) => a.status === 'absent').length;
+  const totalLates = filteredRecords.filter((a) => a.status === 'late').length;
+  const justifiedCount = filteredRecords.filter((a) => a.isJustified).length;
+  const pendingJustifications = filteredRecords.filter((a) => a.justificationStatus === 'pending').length;
 
   const handleManualRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    const st = students.find((s) => s.id === targetStudentId);
+    const st = staffSelectableStudents.find((s) => s.id === targetStudentId);
     if (!st) return;
 
     recordAttendance(st.classId, st.id, attStatus, session, {
@@ -72,9 +106,23 @@ export function AttendanceView() {
       isJustified,
     });
 
-    setFeedback(`Pointage enregistré pour ${st.firstName} ${st.lastName}. Notification envoyée aux parents.`);
+    setFeedback(`Pointage enregistré pour ${st.firstName} ${st.lastName}. Notification SMS d'urgence transmise à la famille.`);
     setShowAddModal(false);
     setReason('');
+    setTimeout(() => setFeedback(null), 4000);
+  };
+
+  const handleParentSubmitJustification = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRecordForJustify) return;
+    const finalReason = customJustificationText.trim()
+      ? `${justificationPreset} : ${customJustificationText.trim()}`
+      : justificationPreset;
+
+    submitAbsenceJustification(selectedRecordForJustify.id, finalReason, currentUser.name);
+    setFeedback(`Justificatif d'absence soumis avec succès pour ${selectedRecordForJustify.studentName}. Il sera validé par l'école.`);
+    setSelectedRecordForJustify(null);
+    setCustomJustificationText('');
     setTimeout(() => setFeedback(null), 4000);
   };
 
@@ -92,31 +140,34 @@ export function AttendanceView() {
     setTimeout(() => setFeedback(null), 4000);
   };
 
-  const handleAddDirectJustification = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRecordForJustify || !customJustificationText) return;
-    submitAbsenceJustification(selectedRecordForJustify.id, customJustificationText, currentUser.name);
-    reviewAbsenceJustification(selectedRecordForJustify.id, 'accepted');
-    setFeedback(`Motif de justification enregistré pour ${selectedRecordForJustify.studentName}.`);
-    setSelectedRecordForJustify(null);
-    setCustomJustificationText('');
-    setTimeout(() => setFeedback(null), 4000);
-  };
-
   return (
     <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              {isParent ? 'Espace Famille' : isTeacher ? 'Espace Enseignant' : 'Registre Direction'}
+            </span>
+          </div>
           <h1 className="text-xl font-bold text-slate-900">
-            Registre des Absences, Retards & Justifications
+            {isParent
+              ? 'Absences & Justificatifs de vos Enfants'
+              : isTeacher
+              ? `Feuille d'Appel & Absences · ${teacherClass?.name || 'Classe'}`
+              : 'Registre des Absences, Retards & Justifications'}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Enregistrement quotidien, traitement des justificatifs et notification automatique aux familles
+            {isParent
+              ? 'Consultez les manquements d\'assiduité enregistrés par les enseignants et déposez vos justificatifs en ligne.'
+              : isTeacher
+              ? 'Suivi de l\'assiduité de votre classe et vérification des justificatifs transmis par les parents.'
+              : 'Enregistrement quotidien, traitement des justificatifs et notification automatique aux familles.'}
           </p>
         </div>
 
-        {(currentRole === 'director' || currentRole === 'teacher' || currentRole === 'secretary') && (
+        {/* Staff action: Record absence (Only for teachers / direction) */}
+        {!isParent && (
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-sm transition-colors cursor-pointer"
@@ -134,51 +185,73 @@ export function AttendanceView() {
         </div>
       )}
 
-      {/* KPI Cards */}
+      {/* KPI Cards adapted to role */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-slate-500 font-medium">Absences enregistrées</div>
+          <div className="text-xs text-slate-500 font-medium">
+            {isParent ? 'Absences de vos enfants' : 'Absences enregistrées'}
+          </div>
           <div className="text-2xl font-bold text-red-600 font-mono tabular-nums mt-1">
             {totalAbsents}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Alertes parents transmises</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {isParent ? 'Total cumulé' : 'Alertes SMS transmises'}
+          </div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <div className="text-xs text-slate-500 font-medium">Retards signalés</div>
-          <div className="text-2xl font-bold text-amber-600 font-mono tabular-nums mt-1">
-            {totalLates}
+          <div className="text-xs text-slate-500 font-medium">
+            {isParent ? 'Absences justifiées' : 'Retards signalés'}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Moyenne : 18 min</div>
+          <div className="text-2xl font-bold text-emerald-600 font-mono tabular-nums mt-1">
+            {isParent ? justifiedCount : totalLates}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {isParent ? 'Validées par l\'école' : 'Moyenne : 15 min'}
+          </div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
           <div className="text-xs text-slate-500 font-medium">Justificatifs en attente</div>
-          <div className="text-2xl font-bold text-blue-600 font-mono tabular-nums mt-1">
+          <div className="text-2xl font-bold text-amber-600 font-mono tabular-nums mt-1">
             {pendingJustifications}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">À valider par la direction</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {isParent ? 'En cours d\'examen par la direction' : 'À valider par la direction'}
+          </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="text-xs p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
-            >
-              <option value="all">Toutes les classes</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Class filter only for Direction */}
+          {isDirector && (
+            <div className="flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="text-xs p-2 border border-slate-300 rounded-lg bg-white text-slate-800"
+              >
+                <option value="all">Toutes les classes</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isParent && (
+            <div className="text-xs text-slate-600 font-semibold flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
+              <Heart className="w-3.5 h-3.5 text-emerald-600" />
+              <span>
+                Suivi pour : {myChildren.map((c) => c.firstName).join(', ') || 'Vos enfants'}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
             <button
@@ -214,16 +287,18 @@ export function AttendanceView() {
           </div>
         </div>
 
-        <div className="relative w-full md:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            value={searchStudent}
-            onChange={(e) => setSearchStudent(e.target.value)}
-            placeholder="Rechercher par élève..."
-            className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
+        {!isParent && (
+          <div className="relative w-full md:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchStudent}
+              onChange={(e) => setSearchStudent(e.target.value)}
+              placeholder="Rechercher par élève..."
+              className="w-full text-xs pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        )}
       </div>
 
       {/* Attendance Table */}
@@ -235,8 +310,8 @@ export function AttendanceView() {
                 <th className="py-3 px-4">Élève & Classe</th>
                 <th className="py-3 px-4">Date & Session</th>
                 <th className="py-3 px-4">Type</th>
-                <th className="py-3 px-4">Motif & Justification</th>
-                <th className="py-3 px-4">Enregistré par</th>
+                <th className="py-3 px-4">Statut & Motif</th>
+                <th className="py-3 px-4">Signalé par</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -244,7 +319,9 @@ export function AttendanceView() {
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-10 text-center text-slate-500">
-                    Aucun incident d'assiduité ne correspond à vos critères.
+                    {isParent
+                      ? 'Excellente nouvelle ! Aucun retard ni absence non justifiée pour vos enfants.'
+                      : 'Aucun enregistrement d\'absence ne correspond à vos filtres.'}
                   </td>
                 </tr>
               ) : (
@@ -256,9 +333,7 @@ export function AttendanceView() {
                     </td>
 
                     <td className="py-3 px-4 font-mono">
-                      <div>
-                        {formatDateNice(rec.date)}
-                      </div>
+                      <div>{formatDateNice(rec.date)}</div>
                       <div className="text-[11px] text-slate-500">{rec.session}</div>
                     </td>
 
@@ -277,8 +352,10 @@ export function AttendanceView() {
                     </td>
 
                     <td className="py-3 px-4 max-w-xs">
-                      <div className="text-slate-800">{rec.reason || 'Aucun motif renseigné'}</div>
-                      <div className="mt-1 flex items-center gap-1.5">
+                      <div className="text-slate-800 font-medium">
+                        {rec.reason || "Motif d'absence"}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
                         {rec.isJustified ? (
                           <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                             ✓ Justifiée
@@ -293,7 +370,7 @@ export function AttendanceView() {
                           </span>
                         )}
                         {rec.justificationReason && (
-                          <span className="text-[11px] text-slate-500 italic truncate block">
+                          <span className="text-[11px] text-slate-600 italic block">
                             "{rec.justificationReason}"
                           </span>
                         )}
@@ -305,16 +382,35 @@ export function AttendanceView() {
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedRecordForJustify(rec);
-                          setCustomJustificationText(rec.justificationReason || '');
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-md transition-colors cursor-pointer border border-slate-200"
-                      >
-                        <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Justification</span>
-                      </button>
+                      {isParent ? (
+                        rec.isJustified ? (
+                          <span className="text-[11px] text-emerald-700 font-semibold">Validé</span>
+                        ) : rec.justificationStatus === 'pending' ? (
+                          <span className="text-[11px] text-blue-600 font-semibold">Examen en cours</span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedRecordForJustify(rec);
+                              setCustomJustificationText('');
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+                          >
+                            <FileCheck className="w-3.5 h-3.5" />
+                            <span>Justifier en ligne</span>
+                          </button>
+                        )
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedRecordForJustify(rec);
+                            setCustomJustificationText(rec.justificationReason || '');
+                          }}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-700 hover:text-slate-950 hover:bg-slate-100 rounded-md transition-colors cursor-pointer border border-slate-200"
+                        >
+                          <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Examiner / Justifier</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -324,8 +420,130 @@ export function AttendanceView() {
         </div>
       </div>
 
-      {/* Manual Recording Modal */}
-      {showAddModal && (
+      {/* Parent Justification Modal */}
+      {selectedRecordForJustify && isParent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Justifier l'absence de {selectedRecordForJustify.studentName}
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Date : {formatDateNice(selectedRecordForJustify.date)} ({selectedRecordForJustify.session})
+            </p>
+
+            <form onSubmit={handleParentSubmitJustification} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Motif principal
+                </label>
+                <select
+                  value={justificationPreset}
+                  onChange={(e) => setJustificationPreset(e.target.value)}
+                  className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
+                >
+                  <option value="Maladie / Paludisme">Maladie / Paludisme</option>
+                  <option value="Consultation médicale ou hospitalisation">Consultation médicale ou hospitalisation</option>
+                  <option value="Cas de force majeure / Famille">Cas de force majeure / Événement familial</option>
+                  <option value="Panne de transport / Pluie torrentielle">Panne de transport / Intempéries</option>
+                  <option value="Autre motif">Autre motif</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Précisions complémentaires ou message à la direction
+                </label>
+                <textarea
+                  rows={3}
+                  value={customJustificationText}
+                  onChange={(e) => setCustomJustificationText(e.target.value)}
+                  placeholder="Ex : Kadiatou a eu une forte fièvre ce matin, elle a été emmenée au dispensaire..."
+                  className="w-full text-xs p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  required
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Signé électroniquement par {currentUser.name} ({currentUser.phone})</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRecordForJustify(null)}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
+                >
+                  Transmettre le justificatif
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Staff Review / Justification Modal */}
+      {selectedRecordForJustify && !isParent && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Traitement d'assiduité : {selectedRecordForJustify.studentName}
+            </h3>
+            <p className="text-xs text-slate-500 mb-3">
+              Classe : {selectedRecordForJustify.className} · Date : {formatDateNice(selectedRecordForJustify.date)}
+            </p>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs mb-4">
+              <div className="text-slate-500">Motif initial : <span className="font-semibold text-slate-800">{selectedRecordForJustify.reason || 'Non renseigné'}</span></div>
+              {selectedRecordForJustify.justificationReason && (
+                <div className="mt-1 text-slate-700">
+                  <span className="font-semibold text-emerald-800">Justificatif famille :</span> {selectedRecordForJustify.justificationReason}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleApproveJustification(selectedRecordForJustify.id)}
+                  className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Valider comme Justifiée</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRejectJustification(selectedRecordForJustify.id)}
+                  className="flex-1 py-2 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Rejeter</span>
+                </button>
+              </div>
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedRecordForJustify(null)}
+                  className="text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Recording Modal (Staff only) */}
+      {showAddModal && !isParent && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
             <h3 className="text-base font-bold text-slate-900 mb-1">
@@ -345,7 +563,7 @@ export function AttendanceView() {
                   onChange={(e) => setTargetStudentId(e.target.value)}
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
                 >
-                  {students.map((st) => (
+                  {staffSelectableStudents.map((st) => (
                     <option key={st.id} value={st.id}>
                       {st.firstName} {st.lastName} ({st.className})
                     </option>
@@ -356,11 +574,11 @@ export function AttendanceView() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Statut
+                    Incident
                   </label>
                   <select
                     value={attStatus}
-                    onChange={(e: any) => setAttStatus(e.target.value)}
+                    onChange={(e) => setAttStatus(e.target.value as any)}
                     className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
                   >
                     <option value="absent">Absence</option>
@@ -374,7 +592,7 @@ export function AttendanceView() {
                   </label>
                   <select
                     value={session}
-                    onChange={(e: any) => setSession(e.target.value)}
+                    onChange={(e) => setSession(e.target.value as any)}
                     className="w-full text-xs p-2.5 border border-slate-300 rounded-lg bg-white"
                   >
                     <option value="Matin">Matin</option>
@@ -390,24 +608,24 @@ export function AttendanceView() {
                   </label>
                   <input
                     type="number"
-                    value={duration}
-                    onChange={(e) => setDuration(Number(e.target.value))}
                     min={5}
                     max={120}
-                    className="w-full text-xs p-2 border border-slate-300 rounded-lg font-mono"
+                    value={duration}
+                    onChange={(e) => setDuration(Number(e.target.value))}
+                    className="w-full text-xs p-2.5 border border-slate-300 rounded-lg"
                   />
                 </div>
               )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Motif ou circonstance
+                  Motif ou observation
                 </label>
                 <input
                   type="text"
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ex: Maladie, embouteillage, panne de véhicule..."
+                  placeholder="Ex : Non présent à la première heure de cours"
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg"
                 />
               </div>
@@ -415,105 +633,29 @@ export function AttendanceView() {
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
-                  id="direct-justified"
+                  id="justifiedCheck"
                   checked={isJustified}
                   onChange={(e) => setIsJustified(e.target.checked)}
-                  className="rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer"
                 />
-                <label htmlFor="direct-justified" className="text-xs text-slate-700 cursor-pointer">
-                  L'élève a fourni un justificatif recevable dès l'arrivée
+                <label htmlFor="justifiedCheck" className="text-xs text-slate-700 cursor-pointer">
+                  Marquer comme justifiée d'office (accord direction)
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-800 cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-sm cursor-pointer transition-colors"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Enregistrer & Notifier</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Justification Review Modal */}
-      {selectedRecordForJustify && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-            <h3 className="text-base font-bold text-slate-900 mb-1">
-              Justification d'absence / retard
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Pour <strong>{selectedRecordForJustify.studentName}</strong> ({selectedRecordForJustify.className}) le {formatDate(selectedRecordForJustify.date)}
-            </p>
-
-            {selectedRecordForJustify.justificationReason && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1">
-                <span className="font-bold text-blue-900">Justificatif soumis par la famille :</span>
-                <p className="text-blue-800 italic">"{selectedRecordForJustify.justificationReason}"</p>
-                {selectedRecordForJustify.justificationSubmittedBy && (
-                  <p className="text-[11px] text-blue-600">
-                    Transmis par : {selectedRecordForJustify.justificationSubmittedBy}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    onClick={() => handleApproveJustification(selectedRecordForJustify.id)}
-                    className="flex-1 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Accepter</span>
-                  </button>
-                  <button
-                    onClick={() => handleRejectJustification(selectedRecordForJustify.id)}
-                    className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-1 cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Rejeter</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleAddDirectJustification} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Ajouter ou modifier le motif officiel de justification
-                </label>
-                <textarea
-                  value={customJustificationText}
-                  onChange={(e) => setCustomJustificationText(e.target.value)}
-                  rows={3}
-                  placeholder="Ex: Certificat médical présenté à la rentrée / Mot d'excuse écrit des parents..."
-                  className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedRecordForJustify(null)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
-                >
-                  Fermer
-                </button>
-                <button
-                  type="submit"
-                  className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg cursor-pointer"
-                >
-                  Enregistrer comme justifiée
+                  Enregistrer & Notifier SMS
                 </button>
               </div>
             </form>

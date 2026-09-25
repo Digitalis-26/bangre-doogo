@@ -132,8 +132,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<UserRole>('director');
   const [currentSchoolId, setCurrentSchoolId] = useState<string>('school-1');
   const [isMobileDeviceView, setIsMobileDeviceView] = useState<boolean>(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(true);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
@@ -178,6 +178,12 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
 
         const savedNotifications = localStorage.getItem(`${STORAGE_PREFIX}notifications`);
         if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+
+        const savedAuth = localStorage.getItem(`${STORAGE_PREFIX}isAuthenticated`);
+        if (savedAuth !== null) {
+          setIsAuthenticated(JSON.parse(savedAuth));
+          setAuthModalOpen(!JSON.parse(savedAuth));
+        }
       }
     } catch (e) {
       console.warn('Could not read saved data from localStorage:', e);
@@ -199,6 +205,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`${STORAGE_PREFIX}announcements`, JSON.stringify(announcements));
       localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
       localStorage.setItem(`${STORAGE_PREFIX}notifications`, JSON.stringify(notifications));
+      localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, JSON.stringify(isAuthenticated));
     } catch (e) {
       console.warn('Could not save data to localStorage:', e);
     }
@@ -213,6 +220,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     announcements,
     attendance,
     notifications,
+    isAuthenticated,
   ]);
 
   // Current School
@@ -285,12 +293,14 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         setCurrentSchoolId(existing.schoolId);
       }
       setIsAuthenticated(true);
+      setAuthModalOpen(false);
       return { success: true, message: `Connexion réussie en tant que ${existing.name} (${existing.role}).` };
     }
 
     if (role) {
       setCurrentRole(role);
       setIsAuthenticated(true);
+      setAuthModalOpen(false);
       return { success: true, message: `Session démarrée avec le rôle ${role}.` };
     }
 
@@ -314,6 +324,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setCurrentRole(data.role);
     if (data.schoolId) setCurrentSchoolId(data.schoolId);
     setIsAuthenticated(true);
+    setAuthModalOpen(false);
     return { success: true, message: `Compte créé avec succès pour ${data.name}. Bienvenue sur ÉcoleConnect !` };
   };
 
