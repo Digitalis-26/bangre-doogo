@@ -20,9 +20,10 @@ import {
 
 interface ParentPortalProps {
   onOpenSmsSimulator: () => void;
+  onNavigateToSchoolSearch?: () => void;
 }
 
-export function ParentPortal({ onOpenSmsSimulator }: ParentPortalProps) {
+export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch }: ParentPortalProps) {
   const {
     currentUser,
     currentSchool,
@@ -157,6 +158,32 @@ export function ParentPortal({ onOpenSmsSimulator }: ParentPortalProps) {
             </div>
           )}
         </div>
+
+        {/* School Finder Discovery Bar for Parents */}
+        {onNavigateToSchoolSearch && (
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-200/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white flex items-center justify-center shrink-0">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-900 block">
+                  Changement d'établissement ou orientation rentrée 2026-2027 ?
+                </span>
+                <span className="text-[11px] text-slate-600 block">
+                  Consultez les écoles partenaires certifiées ÉcoleConnect, comparez les tarifs et déposez une demande de pré-inscription en ligne.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={onNavigateToSchoolSearch}
+              className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shadow-xs transition-colors shrink-0 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>Trouver une école</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {activeChild && (

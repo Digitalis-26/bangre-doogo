@@ -11,6 +11,7 @@ import { SuperAdminPortal } from '@/components/SuperAdminPortal';
 import { AnnouncementsView } from '@/components/AnnouncementsView';
 import { AttendanceView } from '@/components/AttendanceView';
 import { LiaisonView } from '@/components/LiaisonView';
+import { SchoolSearchView } from '@/components/SchoolSearchView';
 import { PricingSection } from '@/components/PricingSection';
 import { ClassesView } from '@/components/ClassesView';
 import { StudentsView } from '@/components/StudentsView';
@@ -22,13 +23,14 @@ import { AiAnnouncementModal } from '@/components/AiAnnouncementModal';
 import { SmsSimulatorModal } from '@/components/SmsSimulatorModal';
 import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { MobileSimulatorFrame } from '@/components/MobileSimulatorFrame';
+import { QuickAccessBottomSection } from '@/components/QuickAccessBottomSection';
 import { ShieldCheck, MapPin, Heart, Sparkles, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
 // Strict Role-Based Access Control matrix
 const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
-  parent: ['dashboard', 'announcements', 'attendance', 'liaison'],
-  teacher: ['dashboard', 'attendance', 'students', 'announcements'],
+  parent: ['dashboard', 'announcements', 'attendance', 'liaison', 'school_search'],
+  teacher: ['dashboard', 'attendance', 'students', 'announcements', 'school_search'],
   director: [
     'dashboard',
     'announcements',
@@ -39,6 +41,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'school_config',
     'liaison',
     'users_admin',
+    'school_search',
   ],
   secretary: [
     'dashboard',
@@ -48,6 +51,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'students',
     'teachers',
     'liaison',
+    'school_search',
   ],
   super_admin: [
     'dashboard',
@@ -59,8 +63,9 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'teachers',
     'attendance',
     'liaison',
+    'school_search',
   ],
-  student: ['dashboard', 'announcements'],
+  student: ['dashboard', 'announcements', 'school_search'],
 };
 
 const TAB_TITLES: Record<string, string> = {
@@ -73,6 +78,7 @@ const TAB_TITLES: Record<string, string> = {
   school_config: 'Configuration Établissement',
   liaison: 'Liaisons Parents',
   users_admin: 'Administration Utilisateurs',
+  school_search: 'Trouver un Établissement',
 };
 
 const ROLE_NAMES: Record<UserRole, string> = {
@@ -176,7 +182,10 @@ function AppContent() {
               {activeTab === 'dashboard' && (
                 <>
                   {currentRole === 'parent' && (
-                    <ParentPortal onOpenSmsSimulator={() => setIsSmsModalOpen(true)} />
+                    <ParentPortal
+                      onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
+                      onNavigateToSchoolSearch={() => setActiveTab('school_search')}
+                    />
                   )}
                   {currentRole === 'teacher' && (
                     <TeacherPortal onOpenAiAssistant={() => setIsAiModalOpen(true)} />
@@ -189,17 +198,28 @@ function AppContent() {
                   )}
                   {currentRole === 'super_admin' && <SuperAdminPortal />}
                   {currentRole === 'student' && (
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-3">
-                      <h3 className="text-lg font-bold text-slate-900">Espace Élève Consultatif</h3>
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-4 max-w-xl mx-auto">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto font-bold text-lg">
+                        🎓
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900">Espace Élève & Orientation</h3>
                       <p className="text-xs text-slate-500 max-w-md mx-auto">
-                        Accès simplifié aux devoirs et calendrier scolaire validé par vos parents et l'équipe pédagogique.
+                        Accès simplifié aux devoirs et circulaires validés par l'équipe pédagogique, ainsi qu'à l'annuaire des établissements pour votre poursuite d'études.
                       </p>
-                      <button
-                        onClick={() => setActiveTab('announcements')}
-                        className="px-4 py-2 bg-emerald-700 text-white text-xs font-semibold rounded-lg cursor-pointer"
-                      >
-                        Consulter les devoirs & circulaires
-                      </button>
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                        <button
+                          onClick={() => setActiveTab('announcements')}
+                          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-xs transition-colors"
+                        >
+                          Consulter les devoirs & circulaires
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('school_search')}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-semibold rounded-xl cursor-pointer transition-colors"
+                        >
+                          🔍 Trouver un nouvel établissement
+                        </button>
+                      </div>
                     </div>
                   )}
                 </>
@@ -224,10 +244,19 @@ function AppContent() {
 
               {activeTab === 'liaison' && <LiaisonView />}
 
+              {activeTab === 'school_search' && <SchoolSearchView />}
+
               {activeTab === 'users_admin' && <UsersAdminView />}
             </>
           )}
         </MobileSimulatorFrame>
+
+        {/* Structure Accès Rapide en bas - modèle avec photo éducatrice et grille de 6 cartes vert foncé */}
+        <QuickAccessBottomSection
+          onNavigateTab={setActiveTab}
+          onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
+          onOpenAiAssistant={() => setIsAiModalOpen(true)}
+        />
       </main>
 
       {/* Global Interactive Modals */}

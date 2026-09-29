@@ -37,6 +37,7 @@ export interface School {
   country: string;
   address?: string;
   phone: string;
+  whatsapp?: string;
   email: string;
   plan: 'free' | 'main' | 'advanced';
   monthlyFee: number;
@@ -45,6 +46,33 @@ export interface School {
   parentsCount: number;
   code: string;
   status: 'active' | 'trial' | 'pending';
+  // Directory & Admissions fields for parents/students
+  cycles?: ('Maternelle' | 'Primaire' | 'Collège' | 'Lycée')[];
+  type?: 'Privé laïc' | 'Privé confessionnel' | 'Public d\'excellence' | 'Bilingue Français-Anglais';
+  annualTuitionMin?: number;
+  annualTuitionMax?: number;
+  services?: string[]; // e.g. "Cantine scolaire", "Transport / Bus", "Internat", "Informatique", "Soutien scolaire"
+  successRate?: string; // e.g. "98% au CEP · 94% au BEPC"
+  openAdmissions?: boolean;
+  admissionDeadline?: string;
+  description?: string;
+  highlights?: string[];
+  bannerGradient?: string;
+}
+
+export interface SchoolInquiry {
+  id: string;
+  schoolId: string;
+  schoolName: string;
+  senderId: string;
+  senderName: string;
+  senderPhone: string;
+  senderRole: 'parent' | 'student';
+  studentName: string;
+  targetGrade: string; // e.g. "6ème", "CM2", "2nde C"
+  message?: string;
+  status: 'sent' | 'contacted' | 'accepted';
+  createdAt: string;
 }
 
 export interface SchoolClass {

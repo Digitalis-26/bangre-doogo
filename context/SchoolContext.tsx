@@ -13,6 +13,7 @@ import {
   AppNotification,
   SaaSPlan,
   AcademicYear,
+  SchoolInquiry,
 } from '@/lib/types';
 import {
   INITIAL_SCHOOLS,
@@ -25,6 +26,7 @@ import {
   INITIAL_NOTIFICATIONS,
   SAAS_PLANS,
   INITIAL_ACADEMIC_YEARS,
+  INITIAL_SCHOOL_INQUIRIES,
 } from '@/lib/sample-data';
 
 interface SchoolContextType {
@@ -112,6 +114,16 @@ interface SchoolContextType {
   submitAbsenceJustification: (attendanceId: string, reason: string, parentName: string) => void;
   reviewAbsenceJustification: (attendanceId: string, status: 'accepted' | 'rejected') => void;
 
+  // School Directory Inquiries & Applications (Parents & Students)
+  schoolInquiries: SchoolInquiry[];
+  submitSchoolInquiry: (data: {
+    schoolId: string;
+    studentName: string;
+    targetGrade: string;
+    senderPhone?: string;
+    message?: string;
+  }) => { success: boolean; message: string; inquiry: SchoolInquiry };
+
   // Notifications
   notifications: AppNotification[];
   markNotificationAsRead: (notificationId: string) => void;
@@ -147,6 +159,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
   const [announcements, setAnnouncements] = useState<Announcement[]>(INITIAL_ANNOUNCEMENTS);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  const [schoolInquiries, setSchoolInquiries] = useState<SchoolInquiry[]>(INITIAL_SCHOOL_INQUIRIES);
 
   // Safely restore persisted data from localStorage on client-side mount only
   useEffect(() => {
@@ -179,6 +192,9 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         const savedNotifications = localStorage.getItem(`${STORAGE_PREFIX}notifications`);
         if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
 
+        const savedInquiries = localStorage.getItem(`${STORAGE_PREFIX}schoolInquiries`);
+        if (savedInquiries) setSchoolInquiries(JSON.parse(savedInquiries));
+
         const savedAuth = localStorage.getItem(`${STORAGE_PREFIX}isAuthenticated`);
         if (savedAuth !== null) {
           setIsAuthenticated(JSON.parse(savedAuth));
@@ -205,6 +221,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`${STORAGE_PREFIX}announcements`, JSON.stringify(announcements));
       localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
       localStorage.setItem(`${STORAGE_PREFIX}notifications`, JSON.stringify(notifications));
+      localStorage.setItem(`${STORAGE_PREFIX}schoolInquiries`, JSON.stringify(schoolInquiries));
       localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, JSON.stringify(isAuthenticated));
     } catch (e) {
       console.warn('Could not save data to localStorage:', e);
@@ -220,6 +237,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     announcements,
     attendance,
     notifications,
+    schoolInquiries,
     isAuthenticated,
   ]);
 
@@ -734,6 +752,52 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
+  // School Directory Inquiries & Applications
+  const submitSchoolInquiry = (data: {
+    schoolId: string;
+    studentName: string;
+    targetGrade: string;
+    senderPhone?: string;
+    message?: string;
+  }) => {
+    const targetSchool = schools.find((s) => s.id === data.schoolId);
+    const newInquiry: SchoolInquiry = {
+      id: `inq-${Date.now()}`,
+      schoolId: data.schoolId,
+      schoolName: targetSchool ? targetSchool.name : 'Établissement',
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      senderPhone: data.senderPhone || currentUser.phone,
+      senderRole: currentRole === 'student' ? 'student' : 'parent',
+      studentName: data.studentName,
+      targetGrade: data.targetGrade,
+      message: data.message,
+      status: 'sent',
+      createdAt: new Date().toISOString(),
+    };
+
+    setSchoolInquiries((prev) => [newInquiry, ...prev]);
+
+    // Push in-app confirmation notification
+    const notif: AppNotification = {
+      id: `notif-inq-${Date.now()}`,
+      userId: currentUser.id,
+      title: 'Demande d\'inscription transmise',
+      message: `Votre demande pour ${data.studentName} (${data.targetGrade}) a été transmise avec succès à l'administration de ${newInquiry.schoolName}.`,
+      type: 'system',
+      channel: 'in_app',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return {
+      success: true,
+      message: `Votre demande de pré-inscription/renseignements a été envoyée avec succès à ${newInquiry.schoolName}. Le secrétariat vous recontactera au ${newInquiry.senderPhone}.`,
+      inquiry: newInquiry,
+    };
+  };
+
   // Plan
   const updateSchoolPlan = (schoolId: string, planId: 'free' | 'main' | 'advanced') => {
     const fee = planId === 'free' ? 0 : planId === 'main' ? 10000 : 25000;
@@ -758,6 +822,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setAnnouncements(INITIAL_ANNOUNCEMENTS);
     setAttendance(INITIAL_ATTENDANCE);
     setNotifications(INITIAL_NOTIFICATIONS);
+    setSchoolInquiries(INITIAL_SCHOOL_INQUIRIES);
     setCurrentSchoolId('school-1');
     setCurrentRole('director');
   };
@@ -813,6 +878,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         recordAttendance,
         submitAbsenceJustification,
         reviewAbsenceJustification,
+        schoolInquiries,
+        submitSchoolInquiry,
         notifications,
         markNotificationAsRead,
         markAllNotificationsAsRead,

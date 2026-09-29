@@ -112,6 +112,17 @@ export function HeroSection({
           </div>
         )}
 
+        {currentRole === 'student' && (
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+              Espace Élève & Orientation Scolaire.
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Consultez vos devoirs, le calendrier scolaire et explorez les établissements partenaires pour votre future orientation (lycées d'excellence, filières bilingues et techniques).
+            </p>
+          </div>
+        )}
+
         {/* Role-Specific Action Buttons (Strictly isolated, NO role-switching) */}
         <div className="flex flex-wrap items-center gap-2.5 pt-2">
           {currentRole === 'parent' && (
@@ -122,6 +133,14 @@ export function HeroSection({
               >
                 <FileText className="w-4 h-4" />
                 <span>Voir les devoirs & circulaires</span>
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('school_search')}
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+              >
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>Trouver un nouvel établissement</span>
               </button>
 
               <button
@@ -146,6 +165,26 @@ export function HeroSection({
               >
                 <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
                 <span>Simulateur SMS</span>
+              </button>
+            </>
+          )}
+
+          {currentRole === 'student' && (
+            <>
+              <button
+                onClick={() => onNavigateTab('announcements')}
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Consulter mes devoirs</span>
+              </button>
+
+              <button
+                onClick={() => onNavigateTab('school_search')}
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+              >
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                <span>Trouver un nouvel établissement</span>
               </button>
             </>
           )}

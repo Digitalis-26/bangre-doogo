@@ -28,6 +28,11 @@ import {
   Heart,
   Clock,
   FileText,
+  Search,
+  Megaphone,
+  Globe,
+  SlidersHorizontal,
+  ChevronRight,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -54,6 +59,7 @@ export function Navbar({
     notifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    announcements,
     isAuthenticated,
     setAuthModalOpen,
     setAuthModalMode,
@@ -62,10 +68,23 @@ export function Navbar({
   } = useSchool();
 
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [showProfileCard, setShowProfileCard] = useState(false);
+  const [showQuickSearch, setShowQuickSearch] = useState(false);
+  const [quickSearchTerm, setQuickSearchTerm] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState<'Français' | 'Mooré' | 'Dioula'>('Français');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  // Active dropdown menu for hover/click
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  // Latest announcement for the green "ANNONCES" ticker
+  const latestAnnouncement = announcements[0] || {
+    id: 'ann-welcome',
+    title: 'Circulaire N°03 : Réunion générale des parents d\'élèves et bilan du 1er trimestre',
+    content: 'Retrouvez toutes les informations sur la scolarité et les devoirs.',
+  };
 
   const roleLabels: Record<UserRole, { label: string; badgeClass: string; icon: any }> = {
     parent: {
@@ -102,73 +121,37 @@ export function Navbar({
 
   const RoleIcon = roleLabels[currentRole]?.icon || UserCheck;
 
-  // Build the strict navigation items according to currentRole ONLY
-  const getNavLinks = () => {
-    switch (currentRole) {
-      case 'parent':
-        return [
-          { id: 'dashboard', label: 'Espace Famille', icon: Heart },
-          { id: 'announcements', label: 'Circulaires & Devoirs', icon: FileText },
-          { id: 'attendance', label: 'Absences de mes enfants', icon: Clock },
-          { id: 'liaison', label: 'Associer un enfant', icon: UserCheck },
-        ];
-      case 'teacher':
-        return [
-          { id: 'dashboard', label: 'Espace Enseignant', icon: BookOpen },
-          { id: 'attendance', label: "Feuille d'Appel", icon: CheckCircle2 },
-          { id: 'students', label: 'Mes Élèves', icon: Users },
-          { id: 'announcements', label: 'Devoirs & Annonces', icon: FileText },
-        ];
-      case 'student':
-        return [
-          { id: 'dashboard', label: 'Mon Espace', icon: GraduationCap },
-          { id: 'announcements', label: 'Devoirs & Circulaires', icon: FileText },
-        ];
-      case 'super_admin':
-        return [
-          { id: 'dashboard', label: 'Super Admin', icon: Shield },
-          { id: 'school_config', label: 'Établissements & Forfaits', icon: Building2 },
-          { id: 'users_admin', label: 'Utilisateurs & Rôles', icon: Users },
-        ];
-      case 'director':
-      case 'secretary':
-      default:
-        return [
-          { id: 'dashboard', label: 'Tableau de bord', icon: Building2 },
-          { id: 'announcements', label: 'Circulaires', icon: FileText },
-          { id: 'attendance', label: 'Absences', icon: Clock },
-          { id: 'classes', label: 'Classes', icon: Layers },
-          { id: 'students', label: 'Élèves', icon: Users },
-          { id: 'teachers', label: 'Enseignants', icon: BookOpen },
-        ];
-    }
+  // Handle quick search submit
+  const handleQuickSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickSearchTerm.trim()) return;
+    setShowQuickSearch(false);
+    setActiveTab('announcements');
   };
 
-  const navLinks = getNavLinks();
-
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
-      {/* Top Banner indicating School context and active user role */}
-      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2">
+    <header className="sticky top-0 z-40 shadow-md">
+      {/* 1. TOP UTILITY STRIP (Context, Year, Role & View Toggles) */}
+      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-medium text-white">ÉcoleConnect 🇧🇫</span>
-          <span className="text-slate-400 hidden sm:inline">·</span>
-          <span className="text-slate-300 truncate max-w-xs sm:max-w-md">
+          <span className="font-bold text-white tracking-wide">ÉcoleConnect 🇧🇫</span>
+          <span className="text-slate-500 hidden sm:inline">|</span>
+          <span className="text-slate-300 truncate max-w-xs sm:max-w-md font-medium">
             {currentSchool.name} ({currentSchool.city})
           </span>
-          <span className="text-slate-400 hidden sm:inline">·</span>
-          <span className="text-emerald-400 font-mono text-[11px] uppercase tracking-wide">
+          <span className="text-slate-500 hidden sm:inline">|</span>
+          <span className="text-amber-400 font-mono text-[11px] font-semibold tracking-wide">
             Année {activeAcademicYear.name}
           </span>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Active Role Indicator (Strict, no switcher) */}
+          {/* Active Role Indicator */}
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-slate-800 text-[11px] text-slate-200 border border-slate-700">
-            <RoleIcon className="w-3 h-3 text-emerald-400" />
-            <span className="text-slate-400">Rôle :</span>
-            <span className="font-semibold text-white">{roleLabels[currentRole]?.label}</span>
+            <RoleIcon className="w-3 h-3 text-amber-400" />
+            <span className="text-slate-400">Profil :</span>
+            <span className="font-bold text-white">{roleLabels[currentRole]?.label}</span>
           </div>
 
           {/* Toggle Mobile Simulator */}
@@ -193,8 +176,8 @@ export function Navbar({
           {isAuthenticated ? (
             <button
               onClick={logout}
-              className="text-slate-300 hover:text-white transition-colors text-[11px] flex items-center gap-1 cursor-pointer bg-slate-800/80 hover:bg-red-950/60 px-2 py-0.5 rounded-sm border border-transparent hover:border-red-800"
-              title="Se déconnecter pour changer d'utilisateur"
+              className="text-slate-300 hover:text-white transition-colors text-[11px] flex items-center gap-1 cursor-pointer bg-slate-800/90 hover:bg-red-950/80 px-2 py-0.5 rounded-sm border border-transparent hover:border-red-800"
+              title="Se déconnecter"
             >
               <LogOut className="w-3 h-3 text-red-400" />
               <span>Déconnexion</span>
@@ -205,7 +188,7 @@ export function Navbar({
                 setAuthModalMode('login');
                 setAuthModalOpen(true);
               }}
-              className="text-emerald-400 hover:text-emerald-300 transition-colors text-[11px] flex items-center gap-1 cursor-pointer bg-slate-800 px-2 py-0.5 rounded-sm font-semibold"
+              className="text-amber-300 hover:text-amber-200 transition-colors text-[11px] flex items-center gap-1 cursor-pointer bg-slate-800 px-2 py-0.5 rounded-sm font-semibold"
             >
               <LogIn className="w-3 h-3" />
               <span>Connexion</span>
@@ -214,270 +197,869 @@ export function Navbar({
         </div>
       </div>
 
-      {/* Main Navigation Row */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Wordmark */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className="text-left cursor-pointer group"
-          >
-            <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-              ÉcoleConnect
-            </span>
-            <span className="block text-[11px] text-slate-500 font-normal leading-tight">
-              {currentRole === 'parent'
-                ? 'Mon Espace Famille Sécurisé'
-                : currentRole === 'teacher'
-                ? 'Espace Pédagogique Enseignant'
-                : 'La communication scolaire, simplement.'}
-            </span>
-          </button>
-        </div>
+      {/* 2. MAIN HEADLINE BANNER (Model: Crimson Red Bar with Golden Yellow "Accueil" Button & White Menus) */}
+      <div className="bg-[#A6192E] text-white">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 flex items-stretch justify-between h-12">
+          {/* Navigation Links Group */}
+          <nav className="flex items-stretch overflow-x-auto no-scrollbar text-xs font-medium">
+            {/* Primary Yellow "Accueil" Button (Matching Model Screenshot) */}
+            <button
+              onClick={() => {
+                setActiveTab('dashboard');
+                setActiveDropdown(null);
+              }}
+              className={`px-4 sm:px-5 flex items-center justify-center font-bold text-slate-950 transition-colors cursor-pointer select-none shrink-0 ${
+                activeTab === 'dashboard'
+                  ? 'bg-[#FFCC00] shadow-inner'
+                  : 'bg-[#FFCC00]/95 hover:bg-[#FFD633]'
+              }`}
+            >
+              <span>Accueil</span>
+            </button>
 
-        {/* Text navigation links strictly restricted to the user's role */}
-        <nav className="hidden md:flex items-center gap-5 text-xs font-semibold text-slate-600">
-          {navLinks.map((link) => {
-            const isActive = activeTab === link.id;
-            return (
-              <button
-                key={link.id}
-                onClick={() => setActiveTab(link.id)}
-                className={`cursor-pointer transition-colors py-1 flex items-center gap-1.5 ${
-                  isActive
-                    ? 'text-emerald-700 border-b-2 border-emerald-600 font-bold'
-                    : 'hover:text-slate-900'
-                }`}
-              >
-                <span>{link.label}</span>
-              </button>
-            );
-          })}
+            {/* Role-Specific Institutional Tabs styled according to Model */}
 
-          {/* Administration dropdown ONLY visible to Director, Secretary, or SuperAdmin */}
-          {(currentRole === 'director' || currentRole === 'secretary' || currentRole === 'super_admin') && (
-            <div className="relative">
-              <button
-                onClick={() => setShowAdminMenu(!showAdminMenu)}
-                className={`flex items-center gap-1 cursor-pointer transition-colors py-1 ${
-                  ['school_config', 'users_admin', 'liaison'].includes(activeTab)
-                    ? 'text-emerald-700 border-b-2 border-emerald-600 font-bold'
-                    : 'hover:text-slate-900'
-                }`}
-              >
-                <span>Administration</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-
-              {showAdminMenu && (
+            {/* PARENT TABS */}
+            {currentRole === 'parent' && (
+              <>
+                {/* Circulaires & Textes ▾ */}
                 <div
-                  className="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1"
-                  onMouseLeave={() => setShowAdminMenu(false)}
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('parent_ann')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('announcements');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'announcements' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Consulter les circulaires et devoirs"
+                  >
+                    <span>Circulaires & Textes</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'parent_ann' ? null : 'parent_ann');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'parent_ann' && (
+                    <div className="absolute left-0 top-full w-56 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <button
+                        onClick={() => {
+                          setActiveTab('announcements');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Circulaires de l'école</span>
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('announcements');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Devoirs & Travail maison</span>
+                        <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          onOpenSmsSimulator();
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Simulateur SMS & WhatsApp</span>
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mes Enfants & Assiduité ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('parent_child')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('attendance');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'attendance' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Suivi des présences et absences"
+                  >
+                    <span>Dossier Élèves</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'parent_child' ? null : 'parent_child');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'parent_child' && (
+                    <div className="absolute left-0 top-full w-56 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <button
+                        onClick={() => {
+                          setActiveTab('attendance');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Absences & Retards</span>
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('attendance');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Justifier une absence</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('liaison');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Associer un enfant (Matricule)</span>
+                        <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Liaison Famille direct link */}
+                <button
+                  onClick={() => {
+                    setActiveTab('liaison');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'liaison' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Gestion du rattachement de vos enfants"
+                >
+                  <span>Liaison Famille</span>
+                </button>
+
+                {/* Établissements & Recherche ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('parent_school')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('school_search');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'school_search' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Trouver un nouvel établissement scolaire"
+                  >
+                    <span>Trouver une École</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'parent_school' ? null : 'parent_school');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'parent_school' && (
+                    <div className="absolute left-0 top-full w-60 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <button
+                        onClick={() => {
+                          setActiveTab('school_search');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Rechercher un nouvel établissement</span>
+                        <Search className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('school_search');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Mes candidatures & contacts</span>
+                        <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Direct Simulator Action */}
+                <button
+                  onClick={onOpenSmsSimulator}
+                  className="px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap"
+                  title="Simulateur de notifications SMS"
+                >
+                  <span>Simulateur SMS</span>
+                </button>
+              </>
+            )}
+
+            {/* TEACHER TABS */}
+            {currentRole === 'teacher' && (
+              <>
+                {/* Feuille d'Appel (Direct access) */}
+                <button
+                  onClick={() => {
+                    setActiveTab('attendance');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'attendance' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Effectuer l'appel du jour"
+                >
+                  <span>Feuille d'Appel</span>
+                </button>
+
+                {/* Mes Élèves (Direct access) */}
+                <button
+                  onClick={() => {
+                    setActiveTab('students');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'students' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Liste des élèves de ma classe"
+                >
+                  <span>Mes Élèves</span>
+                </button>
+
+                {/* Pédagogie & Devoirs ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('teacher_ped')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('announcements');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'announcements' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Devoirs et circulaires"
+                  >
+                    <span>Pédagogie & Devoirs</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'teacher_ped' ? null : 'teacher_ped');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'teacher_ped' && (
+                    <div className="absolute left-0 top-full w-52 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50">
+                      <button
+                        onClick={() => {
+                          setActiveTab('announcements');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Devoirs & Annonces</span>
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          onOpenAiAssistant();
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Rédiger avec IA</span>
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    setActiveTab('school_search');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'school_search' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Trouver un établissement partenaire"
+                >
+                  <span>Trouver une École</span>
+                </button>
+              </>
+            )}
+
+            {/* DIRECTION & SECRÉTARIAT TABS */}
+            {(currentRole === 'director' || currentRole === 'secretary' || currentRole === 'super_admin') && (
+              <>
+                {/* Communiqués ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('dir_com')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('announcements');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'announcements' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Circulaires et annonces officielles"
+                  >
+                    <span>Communiqués</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'dir_com' ? null : 'dir_com');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'dir_com' && (
+                    <div className="absolute left-0 top-full w-56 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50">
+                      <button
+                        onClick={() => {
+                          setActiveTab('announcements');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Circulaires & Diffusion</span>
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          onOpenAiAssistant();
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Rédiger avec IA</span>
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Assiduité ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('dir_att')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('attendance');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      activeTab === 'attendance' ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Registre des absences et justificatifs"
+                  >
+                    <span>Assiduité</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'dir_att' ? null : 'dir_att');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'dir_att' && (
+                    <div className="absolute left-0 top-full w-56 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50">
+                      <button
+                        onClick={() => {
+                          setActiveTab('attendance');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Registre des Absences</span>
+                        <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('attendance');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Validation Justificatifs</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Structure ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('dir_struct')}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('classes');
+                      setActiveDropdown(null);
+                    }}
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      ['classes', 'students', 'teachers'].includes(activeTab) ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Classes, élèves et enseignants"
+                  >
+                    <span>Structure</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'dir_struct' ? null : 'dir_struct');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {activeDropdown === 'dir_struct' && (
+                    <div className="absolute left-0 top-full w-52 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50">
+                      <button
+                        onClick={() => {
+                          setActiveTab('classes');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Classes & Divisions</span>
+                        <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('students');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Registre des Élèves</span>
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('teachers');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Corps Enseignant</span>
+                        <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Administration ▾ */}
+                <div
+                  className="relative flex items-stretch group"
+                  onMouseEnter={() => setActiveDropdown('dir_admin')}
+                  onMouseLeave={() => setActiveDropdown(null)}
                 >
                   <button
                     onClick={() => {
                       setActiveTab('school_config');
-                      setShowAdminMenu(false);
+                      setActiveDropdown(null);
                     }}
-                    className="w-full text-left px-3.5 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+                    className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                      ['school_config', 'liaison', 'users_admin'].includes(activeTab) ? 'bg-black/25 font-bold text-amber-200' : ''
+                    }`}
+                    title="Paramétrage et liaisons parents"
                   >
-                    <Building2 className="w-4 h-4 text-emerald-600" />
-                    <span>Établissement & Années</span>
+                    <span>Administration</span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === 'dir_admin' ? null : 'dir_admin');
+                      }}
+                      className="text-[10px] opacity-80 hover:text-amber-300 p-0.5"
+                    >
+                      ▾
+                    </span>
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setActiveTab('liaison');
-                      setShowAdminMenu(false);
-                    }}
-                    className="w-full text-left px-3.5 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-700"
-                  >
-                    <UserCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Validation Liaisons Parents</span>
-                  </button>
+                  {activeDropdown === 'dir_admin' && (
+                    <div className="absolute left-0 top-full w-60 bg-white text-slate-800 rounded-b-xl shadow-2xl border border-slate-200 py-1.5 z-50">
+                      <button
+                        onClick={() => {
+                          setActiveTab('school_config');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Établissement & Années</span>
+                        <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('liaison');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Validation Liaisons Parents</span>
+                        <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveTab('users_admin');
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 cursor-pointer"
+                      >
+                        <span>Utilisateurs & Rôles</span>
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          onOpenPricing();
+                          setActiveDropdown(null);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-medium flex items-center justify-between text-slate-700 border-t border-slate-100 cursor-pointer"
+                      >
+                        <span>Abonnement SaaS & Forfait SMS</span>
+                        <span className="text-[10px] text-amber-600 font-bold">Pro</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
+                {/* Réseau d'Écoles */}
+                <button
+                  onClick={() => {
+                    setActiveTab('school_search');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'school_search' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Annuaire et recherche d'établissements"
+                >
+                  <span>Trouver une École</span>
+                </button>
+              </>
+            )}
+
+            {/* STUDENT TABS */}
+            {currentRole === 'student' && (
+              <>
+                <button
+                  onClick={() => {
+                    setActiveTab('announcements');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'announcements' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Devoirs et circulaires pédagogiques"
+                >
+                  <span>Devoirs & Circulaires</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('school_search');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'school_search' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Rechercher un lycée ou nouvel établissement"
+                >
+                  <span>Trouver un Établissement</span>
+                </button>
+              </>
+            )}
+          </nav>
+
+          {/* Right Controls: Search, Language selector, Notification Bell, User Card (Matching Model Screenshot) */}
+          <div className="flex items-center gap-2 sm:gap-3 pl-2 shrink-0">
+            {/* Search Icon (White magnifying glass) */}
+            <div className="relative">
+              <button
+                onClick={() => setShowQuickSearch(!showQuickSearch)}
+                className="p-1.5 text-white hover:text-amber-300 transition-colors cursor-pointer"
+                title="Rechercher une école ou circulaire"
+                aria-label="Recherche"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+
+              {/* Quick Search Popover */}
+              {showQuickSearch && (
+                <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-xl shadow-2xl p-3 z-50 text-slate-800">
+                  <form onSubmit={handleQuickSearchSubmit} className="space-y-2">
+                    <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                      Recherche rapide
+                    </div>
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                      <input
+                        type="text"
+                        value={quickSearchTerm}
+                        onChange={(e) => setQuickSearchTerm(e.target.value)}
+                        placeholder="Rechercher une circulaire, école, élève..."
+                        className="w-full text-xs pl-8 pr-2.5 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex items-center justify-end gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickSearch(false)}
+                        className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
+                      >
+                        Fermer
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg cursor-pointer"
+                      >
+                        Rechercher
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Language Dropdown (Matching Model Screenshot white box with chevron) */}
+            <div className="relative">
+              <button
+                onClick={() => setShowLangMenu(!showLangMenu)}
+                className="bg-white text-slate-900 text-[11px] font-semibold px-2.5 py-1 rounded-sm flex items-center gap-1.5 shadow-xs hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <span>{selectedLanguage}</span>
+                <span className="text-[10px]">▾</span>
+              </button>
+
+              {showLangMenu && (
+                <div
+                  className="absolute right-0 mt-1 w-32 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 py-1 z-50 text-xs"
+                  onMouseLeave={() => setShowLangMenu(false)}
+                >
                   <button
                     onClick={() => {
-                      setActiveTab('users_admin');
-                      setShowAdminMenu(false);
+                      setSelectedLanguage('Français');
+                      setShowLangMenu(false);
                     }}
-                    className="w-full text-left px-3.5 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+                    className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center justify-between ${
+                      selectedLanguage === 'Français' ? 'font-bold text-emerald-700' : ''
+                    }`}
                   >
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Utilisateurs & Rôles</span>
+                    <span>Français</span>
+                    {selectedLanguage === 'Français' && <span className="text-[10px]">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedLanguage('Mooré');
+                      setShowLangMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center justify-between ${
+                      selectedLanguage === 'Mooré' ? 'font-bold text-emerald-700' : ''
+                    }`}
+                  >
+                    <span>Mooré</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedLanguage('Dioula');
+                      setShowLangMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center justify-between ${
+                      selectedLanguage === 'Dioula' ? 'font-bold text-emerald-700' : ''
+                    }`}
+                  >
+                    <span>Dioula</span>
                   </button>
                 </div>
               )}
             </div>
-          )}
-        </nav>
 
-        {/* Actions & Role Profile Display (Strictly no role switching!) */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Quick AI Announcement Trigger (Only for staff: Director, Teacher, Secretary) */}
-          {(currentRole === 'director' || currentRole === 'teacher' || currentRole === 'secretary') && (
-            <button
-              onClick={onOpenAiAssistant}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Rédiger avec IA</span>
-            </button>
-          )}
+            {/* Notifications Bell */}
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-1 text-white hover:text-amber-300 transition-colors cursor-pointer"
+                aria-label="Centre de notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 text-slate-950 text-[9px] font-bold rounded-full flex items-center justify-center font-mono">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
 
-          {/* SMS simulation button */}
+              {/* Notification Dropdown */}
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden text-slate-800">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">
+                      Notifications ({unreadCount} non lues)
+                    </span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllNotificationsAsRead}
+                        className="text-[11px] text-emerald-700 hover:underline font-medium cursor-pointer"
+                      >
+                        Tout marquer comme lu
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 text-xs">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-slate-500">Aucune notification.</div>
+                    ) : (
+                      notifications.slice(0, 5).map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => markNotificationAsRead(notif.id)}
+                          className={`p-3 cursor-pointer ${notif.isRead ? 'bg-white opacity-70' : 'bg-emerald-50/50 font-medium'}`}
+                        >
+                          <div className="text-[10px] text-slate-400 mb-0.5">{formatTime(notif.createdAt)}</div>
+                          <div className="text-slate-900 font-semibold">{notif.title}</div>
+                          <div className="text-slate-600 text-[11px] line-clamp-2">{notif.message}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Avatar / Mini-badge */}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileCard(!showProfileCard)}
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/40 flex items-center justify-center font-bold text-xs transition-colors cursor-pointer"
+                title={currentUser.name}
+              >
+                {currentUser.name.charAt(0)}
+              </button>
+
+              {/* Profile Card Popover */}
+              {showProfileCard && (
+                <div
+                  className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden text-slate-800"
+                  onMouseLeave={() => setShowProfileCard(false)}
+                >
+                  <div className="p-3 bg-slate-50 border-b border-slate-200">
+                    <div className="font-bold text-xs text-slate-900 truncate">{currentUser.name}</div>
+                    <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      {roleLabels[currentRole]?.label}
+                    </span>
+                  </div>
+                  <div className="p-2">
+                    <button
+                      onClick={() => {
+                        setShowProfileCard(false);
+                        logout();
+                      }}
+                      className="w-full py-1.5 px-3 text-xs text-red-700 hover:bg-red-50 font-semibold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Se déconnecter</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. SUB-HEADLINE TICKER (Model: Green "ANNONCES" Badge + News Marquee Text) */}
+      <div className="bg-white border-b border-slate-200 shadow-2xs">
+        <div className="max-w-7xl mx-auto flex items-stretch overflow-hidden text-xs">
+          {/* Green ANNONCES block matching exactly the model screenshot */}
           <button
-            onClick={onOpenSmsSimulator}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-            title="Aperçu des alertes transmises par SMS et WhatsApp"
+            onClick={() => setActiveTab('announcements')}
+            className="bg-[#008751] hover:bg-[#007043] text-white font-black text-xs uppercase px-4 sm:px-6 py-2 tracking-wider flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer select-none"
+            title="Consulter toutes les annonces et circulaires"
           >
-            <MessageSquare className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden lg:inline">Simulateur SMS</span>
+            <Megaphone className="w-3.5 h-3.5" />
+            <span>ANNONCES</span>
           </button>
 
-          {/* Notifications Bell */}
-          <div className="relative">
-            <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              aria-label="Centre de notifications"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center font-mono tabular-nums">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-
-            {/* Notification Dropdown Panel */}
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900">
-                    Notifications ({unreadCount} non lues)
-                  </span>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllNotificationsAsRead}
-                      className="text-[11px] text-emerald-700 hover:underline font-medium cursor-pointer"
-                    >
-                      Tout marquer comme lu
-                    </button>
-                  )}
-                </div>
-
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                  {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-slate-500">
-                      Aucune notification pour le moment.
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => markNotificationAsRead(notif.id)}
-                        className={`p-3 text-xs cursor-pointer transition-colors ${
-                          notif.isRead ? 'bg-white opacity-70' : 'bg-emerald-50/40 font-medium'
-                        } hover:bg-slate-50`}
-                      >
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                          <span className="font-semibold text-emerald-800 uppercase tracking-wider">
-                            {notif.type}
-                          </span>
-                          <span>{formatTime(notif.createdAt)}</span>
-                        </div>
-                        <div className="text-slate-900 font-semibold mb-0.5">{notif.title}</div>
-                        <div className="text-slate-600 text-[11px] leading-relaxed">{notif.message}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Marquee ticker text */}
+          <div
+            onClick={() => setActiveTab('announcements')}
+            className="flex-1 px-3 sm:px-4 py-2 text-xs truncate flex items-center gap-2 cursor-pointer hover:bg-slate-50 transition-colors overflow-hidden"
+          >
+            <span className="text-slate-600 shrink-0 font-medium">
+              Bienvenue sur le portail {currentSchool.name} /
+            </span>
+            <span className="text-[#A6192E] font-semibold truncate hover:underline">
+              {latestAnnouncement.title}
+            </span>
+            <span className="text-slate-400 hidden lg:inline">
+              · Cliquez pour consulter le document officiel
+            </span>
           </div>
 
-          {/* User Profile Card (STRICT ISOLATION: displays current user identity, NO role switching menu) */}
-          <div className="relative">
-            <button
-              onClick={() => setShowProfileCard(!showProfileCard)}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
-              title="Voir mon profil"
-            >
-              <div className="w-5 h-5 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-[10px]">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="text-left hidden sm:block">
-                <div className="font-semibold leading-tight text-slate-900 truncate max-w-[130px]">
-                  {currentUser.name}
-                </div>
-                <div className="text-[10px] text-emerald-700 font-medium truncate max-w-[130px]">
-                  {roleLabels[currentRole]?.label}
-                </div>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-            </button>
-
-            {/* Profile Popover with strictly informative content and logout */}
-            {showProfileCard && (
-              <div
-                className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden"
-                onMouseLeave={() => setShowProfileCard(false)}
-              >
-                <div className="p-4 bg-slate-50 border-b border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-base shadow-xs">
-                      {currentUser.name.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">
-                        {currentUser.name}
-                      </div>
-                      <div className="text-[11px] text-slate-500 truncate">
-                        {currentUser.email}
-                      </div>
-                      <div className="mt-1">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border ${roleLabels[currentRole]?.badgeClass}`}>
-                          {roleLabels[currentRole]?.label}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-3 text-xs text-slate-600 space-y-1.5 border-b border-slate-100">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-500">Établissement :</span>
-                    <span className="font-medium text-slate-800 truncate max-w-[150px]">{currentSchool.name}</span>
-                  </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-500">Téléphone :</span>
-                    <span className="font-medium text-slate-800">{currentUser.phone}</span>
-                  </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="text-slate-500">Accès :</span>
-                    <span className="font-medium text-emerald-700">Strictement cloisonné</span>
-                  </div>
-                </div>
-
-                <div className="p-2 bg-slate-50 flex items-center justify-between">
-                  <p className="text-[10px] text-slate-500 italic">
-                    Pour changer de profil, déconnectez-vous.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setShowProfileCard(false);
-                      logout();
-                    }}
-                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
-                  >
-                    <LogOut className="w-3 h-3" />
-                    <span>Déconnexion</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Right action button inside ticker */}
+          <button
+            onClick={() => setActiveTab('announcements')}
+            className="hidden sm:flex items-center gap-1 px-3 text-[11px] text-slate-500 hover:text-slate-800 font-semibold shrink-0 cursor-pointer border-l border-slate-100"
+          >
+            <span>Voir tout</span>
+            <ChevronRight className="w-3 h-3" />
+          </button>
         </div>
       </div>
     </header>

@@ -315,9 +315,19 @@ export function AuthScreen() {
                     >
                       🏫 Direction
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        login('eleve@ecoleconnect.bf', 'student');
+                      }}
+                      className="px-2.5 py-1.5 text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 font-semibold rounded-lg cursor-pointer transition-colors"
+                      title="Tester l'espace élève et recherche d'établissement"
+                    >
+                      🎓 Élève
+                    </button>
                   </div>
                   <p className="text-[10px] text-center text-slate-400 mt-2">
-                    Cloisonnement strict : Un compte parent n'accède qu'à l'Espace Famille et au suivi de ses enfants.
+                    Cloisonnement strict : Chaque profil n'accède qu'aux fonctions qui le concernent (orientation et recherche d'établissement pour élèves et parents).
                   </p>
                 </div>
 
