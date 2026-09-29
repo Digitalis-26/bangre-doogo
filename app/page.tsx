@@ -23,14 +23,14 @@ import { AiAnnouncementModal } from '@/components/AiAnnouncementModal';
 import { SmsSimulatorModal } from '@/components/SmsSimulatorModal';
 import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { MobileSimulatorFrame } from '@/components/MobileSimulatorFrame';
-import { QuickAccessBottomSection } from '@/components/QuickAccessBottomSection';
-import { ShieldCheck, MapPin, Heart, Sparkles, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { QuickAccessView } from '@/components/QuickAccessView';
+import { MapPin, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
 // Strict Role-Based Access Control matrix
 const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
-  parent: ['dashboard', 'announcements', 'attendance', 'liaison', 'school_search'],
-  teacher: ['dashboard', 'attendance', 'students', 'announcements', 'school_search'],
+  parent: ['dashboard', 'announcements', 'attendance', 'liaison', 'school_search', 'quick_access'],
+  teacher: ['dashboard', 'attendance', 'students', 'announcements', 'school_search', 'quick_access'],
   director: [
     'dashboard',
     'announcements',
@@ -42,6 +42,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'liaison',
     'users_admin',
     'school_search',
+    'quick_access',
   ],
   secretary: [
     'dashboard',
@@ -52,6 +53,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'teachers',
     'liaison',
     'school_search',
+    'quick_access',
   ],
   super_admin: [
     'dashboard',
@@ -64,12 +66,14 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'attendance',
     'liaison',
     'school_search',
+    'quick_access',
   ],
-  student: ['dashboard', 'announcements', 'school_search'],
+  student: ['dashboard', 'announcements', 'school_search', 'quick_access'],
 };
 
 const TAB_TITLES: Record<string, string> = {
   dashboard: 'Accueil',
+  quick_access: 'Hub Accès Rapide',
   announcements: 'Circulaires & Annonces',
   attendance: 'Absences & Justificatifs',
   classes: 'Gestion des Classes',
@@ -104,6 +108,42 @@ function AppContent() {
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
+  // Synchronize activeTab with URL query parameter for autonomous addressable pages
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabFromUrl = params.get('tab');
+      if (tabFromUrl && ALLOWED_TABS_BY_ROLE[currentRole]?.includes(tabFromUrl)) {
+        setActiveTab(tabFromUrl);
+      }
+
+      const handlePopState = () => {
+        const p = new URLSearchParams(window.location.search);
+        const t = p.get('tab') || 'dashboard';
+        if (ALLOWED_TABS_BY_ROLE[currentRole]?.includes(t)) {
+          setActiveTab(t);
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [currentRole]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'dashboard') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.pushState({}, '', url.toString());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // If user is not authenticated, render ONLY the authentication interface
   if (!isAuthenticated) {
     return <AuthScreen />;
@@ -126,7 +166,7 @@ function AppContent() {
       category: 'general',
       totalTargets: currentSchool.parentsCount,
     });
-    setActiveTab('announcements');
+    handleTabChange('announcements');
   };
 
   return (
@@ -134,7 +174,7 @@ function AppContent() {
       {/* Top Navbar strictly tailored to current user role */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         onOpenAiAssistant={() => setIsAiModalOpen(true)}
         onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
         onOpenPricing={() => setIsSubscriptionModalOpen(true)}
@@ -145,7 +185,7 @@ function AppContent() {
         {/* Role-tailored Hero Section displayed on Dashboard tab */}
         {activeTab === 'dashboard' && (
           <HeroSection
-            onNavigateTab={setActiveTab}
+            onNavigateTab={handleTabChange}
             onOpenPricing={() => setIsSubscriptionModalOpen(true)}
             onOpenAiAssistant={() => setIsAiModalOpen(true)}
             onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
@@ -153,7 +193,7 @@ function AppContent() {
         )}
 
         {/* Dynamic content wrapped in Mobile Simulator frame when toggled */}
-        <MobileSimulatorFrame activeTab={activeTab} setActiveTab={setActiveTab}>
+        <MobileSimulatorFrame activeTab={activeTab} setActiveTab={handleTabChange}>
           {/* If the active tab is not allowed for this role, show strict Access Denied */}
           {!isTabAllowed ? (
             <div className="bg-white p-8 sm:p-12 rounded-3xl border border-red-200 text-center space-y-4 max-w-lg mx-auto shadow-sm my-6">
@@ -169,7 +209,7 @@ function AppContent() {
               </p>
               <div className="pt-2">
                 <button
-                  onClick={() => setActiveTab('dashboard')}
+                  onClick={() => handleTabChange('dashboard')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -184,7 +224,7 @@ function AppContent() {
                   {currentRole === 'parent' && (
                     <ParentPortal
                       onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-                      onNavigateToSchoolSearch={() => setActiveTab('school_search')}
+                      onNavigateToSchoolSearch={() => handleTabChange('school_search')}
                     />
                   )}
                   {currentRole === 'teacher' && (
@@ -208,13 +248,13 @@ function AppContent() {
                       </p>
                       <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                         <button
-                          onClick={() => setActiveTab('announcements')}
+                          onClick={() => handleTabChange('announcements')}
                           className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-xs transition-colors"
                         >
                           Consulter les devoirs & circulaires
                         </button>
                         <button
-                          onClick={() => setActiveTab('school_search')}
+                          onClick={() => handleTabChange('school_search')}
                           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-semibold rounded-xl cursor-pointer transition-colors"
                         >
                           🔍 Trouver un nouvel établissement
@@ -223,6 +263,15 @@ function AppContent() {
                     </div>
                   )}
                 </>
+              )}
+
+              {/* Page Autonome : Hub Accès Rapide */}
+              {activeTab === 'quick_access' && (
+                <QuickAccessView
+                  onNavigateTab={handleTabChange}
+                  onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
+                  onOpenAiAssistant={() => setIsAiModalOpen(true)}
+                />
               )}
 
               {activeTab === 'announcements' && (
@@ -250,13 +299,6 @@ function AppContent() {
             </>
           )}
         </MobileSimulatorFrame>
-
-        {/* Structure Accès Rapide en bas - modèle avec photo éducatrice et grille de 6 cartes vert foncé */}
-        <QuickAccessBottomSection
-          onNavigateTab={setActiveTab}
-          onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-          onOpenAiAssistant={() => setIsAiModalOpen(true)}
-        />
       </main>
 
       {/* Global Interactive Modals */}
@@ -288,19 +330,6 @@ function AppContent() {
               <MapPin className="w-3 h-3 text-emerald-600" />
               <span>Burkina Faso & Afrique de l'Ouest</span>
             </span>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => setIsSmsModalOpen(true)}
-              className="hover:text-slate-900 cursor-pointer"
-            >
-              Simulateur SMS
-            </button>
-            <div className="flex items-center gap-1 text-slate-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Cloisonnement strict des données</span>
-            </div>
           </div>
         </div>
       </footer>

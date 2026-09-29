@@ -217,6 +217,23 @@ export function Navbar({
               <span>Accueil</span>
             </button>
 
+            {/* Accès Rapide Autonomous Tab (Visible for all roles) */}
+            <button
+              onClick={() => {
+                setActiveTab('quick_access');
+                setActiveDropdown(null);
+              }}
+              className={`px-3 sm:px-4 flex items-center gap-1.5 transition-colors cursor-pointer select-none whitespace-nowrap shrink-0 border-r border-white/20 ${
+                activeTab === 'quick_access'
+                  ? 'bg-amber-400 text-slate-950 font-black shadow-inner'
+                  : 'text-amber-200 hover:bg-black/20 hover:text-white font-semibold'
+              }`}
+              title="Hub autonome Accès Rapide"
+            >
+              <span className="text-amber-300 text-sm">★</span>
+              <span>Accès Rapide</span>
+            </button>
+
             {/* Role-Specific Institutional Tabs styled according to Model */}
 
             {/* PARENT TABS */}
@@ -417,15 +434,6 @@ export function Navbar({
                     </div>
                   )}
                 </div>
-
-                {/* Direct Simulator Action */}
-                <button
-                  onClick={onOpenSmsSimulator}
-                  className="px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap"
-                  title="Simulateur de notifications SMS"
-                >
-                  <span>Simulateur SMS</span>
-                </button>
               </>
             )}
 

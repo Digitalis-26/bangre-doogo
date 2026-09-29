@@ -77,20 +77,21 @@ export function AuthScreen() {
   return (
     <div className="min-h-screen w-full bg-white flex flex-col justify-between text-slate-900 select-none">
       {/* Top Brand Header matching exactly the model screenshot */}
-      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-100">
+      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full border-2 border-[#E08D79] flex items-center justify-center text-[#E08D79] font-bold text-sm">
+          <div className="w-9 h-9 rounded-full border-2 border-[#154734] bg-emerald-50 flex items-center justify-center text-[#154734] font-black text-sm shadow-xs">
             EC
           </div>
-          <span className="text-lg font-bold text-[#E08D79] tracking-tight">
-            ÉcoleConnect
+          <span className="text-lg font-black text-[#154734] tracking-tight flex items-center gap-1">
+            <span>ÉcoleConnect</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           </span>
         </div>
 
         <div className="flex items-center gap-4">
           <button
             type="button"
-            className="p-2 text-slate-700 hover:text-slate-900 cursor-pointer"
+            className="p-2 text-slate-700 hover:text-[#154734] cursor-pointer transition-colors"
             title="Thème"
           >
             <Moon className="w-4 h-4" />
@@ -101,7 +102,7 @@ export function AuthScreen() {
               setAuthModalMode('login');
               setFeedback(null);
             }}
-            className="px-4 py-2 bg-[#E08D79] hover:bg-[#D57B65] text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            className="px-4 py-2 bg-[#154734] hover:bg-[#0c3124] text-amber-300 text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer border border-emerald-700/40"
           >
             Se connecter
           </button>
@@ -133,18 +134,21 @@ export function AuthScreen() {
           </div>
 
           {/* Clean White Card with Rounded-3xl and Border */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-7 space-y-4">
-            {/* Informational Callout 1 (Notice) */}
-            <div className="p-3.5 rounded-xl border border-amber-200/80 bg-amber-50/40 flex items-start gap-2.5 text-slate-700 text-xs leading-relaxed">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-7 space-y-4 relative overflow-hidden">
+            {/* Top Vert-Or Decorative Accent Strip */}
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#154734] via-amber-400 to-[#154734]" />
+
+            {/* Informational Callout 1 (Or / Doré) */}
+            <div className="p-3.5 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50/90 to-yellow-50/40 flex items-start gap-2.5 text-slate-800 text-xs leading-relaxed">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <span>
                 Suivi scolaire en direct : notes, devoirs, circulaires et alertes d'absences en temps réel.
               </span>
             </div>
 
-            {/* Informational Callout 2 (Advantage) */}
-            <div className="p-3.5 rounded-xl border border-orange-200/80 bg-orange-50/40 flex items-start gap-2.5 text-slate-700 text-xs leading-relaxed">
-              <Sparkles className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+            {/* Informational Callout 2 (Vert / Émeraude) */}
+            <div className="p-3.5 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50/90 to-teal-50/40 flex items-start gap-2.5 text-slate-800 text-xs leading-relaxed">
+              <Sparkles className="w-4 h-4 text-[#154734] shrink-0 mt-0.5" />
               <span>
                 Plateforme unifiée école & familles avec liaison sécurisée et SMS d'urgence automatiques.
               </span>
@@ -184,7 +188,7 @@ export function AuthScreen() {
                     setAuthModalMode('signup');
                     setFeedback(null);
                   }}
-                  className="text-xs font-medium text-orange-600 hover:text-orange-700 cursor-pointer"
+                  className="text-xs font-bold text-[#154734] hover:text-amber-600 transition-colors cursor-pointer"
                 >
                   Pas de compte ? S'inscrire
                 </button>
@@ -195,7 +199,7 @@ export function AuthScreen() {
                     setAuthModalMode('login');
                     setFeedback(null);
                   }}
-                  className="text-xs font-medium text-orange-600 hover:text-orange-700 cursor-pointer"
+                  className="text-xs font-bold text-[#154734] hover:text-amber-600 transition-colors cursor-pointer"
                 >
                   Déjà un compte ? Se connecter
                 </button>
@@ -211,7 +215,7 @@ export function AuthScreen() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
                     required
                   />
                 </div>
@@ -222,12 +226,12 @@ export function AuthScreen() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Mot de passe (min. 12 caractères, majuscule + n...)"
-                    className="w-full text-xs sm:text-sm pl-4 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    className="w-full text-xs sm:text-sm pl-4 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#154734] cursor-pointer p-1 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -238,7 +242,7 @@ export function AuthScreen() {
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
                   >
                     <option value="parent">Profil : Parent d'élève</option>
                     <option value="teacher">Profil : Enseignant</option>
@@ -255,14 +259,14 @@ export function AuthScreen() {
                       type="checkbox"
                       checked={isCaptchaChecked}
                       onChange={(e) => setIsCaptchaChecked(e.target.checked)}
-                      className="w-6 h-6 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer accent-orange-600"
+                      className="w-6 h-6 rounded border-slate-300 text-[#154734] focus:ring-[#154734] cursor-pointer accent-[#154734]"
                     />
                     <span className="text-xs sm:text-sm font-medium text-slate-700">
                       Je suis un humain
                     </span>
                   </label>
                   <div className="flex flex-col items-center text-[9px] text-slate-400 font-mono">
-                    <div className="w-5 h-5 rounded-md bg-teal-500 text-white flex items-center justify-center font-bold text-[10px]">
+                    <div className="w-5 h-5 rounded-md bg-[#154734] text-amber-300 flex items-center justify-center font-bold text-[10px]">
                       h
                     </div>
                     <span className="font-bold text-slate-600">hCaptcha</span>
@@ -270,19 +274,21 @@ export function AuthScreen() {
                   </div>
                 </div>
 
-                {/* Primary Action Button */}
+                {/* Primary Action Button - Vert & Or */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-[#E08D79] hover:bg-[#D57B65] active:scale-[0.99] text-white text-sm font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
                 >
                   <span>Se connecter</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
 
-                {/* Quick login demo links */}
+                {/* Quick login demo links - Vert & Or Theme */}
                 <div className="pt-2 border-t border-slate-100">
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
+                  <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
+                    <span className="text-amber-500">★</span>
                     <span>Accès rapide démo par profil</span>
+                    <span className="text-amber-500">★</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 justify-center">
                     <button
@@ -290,7 +296,7 @@ export function AuthScreen() {
                       onClick={() => {
                         login('parent@ecoleconnect.bf', 'parent');
                       }}
-                      className="px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold rounded-lg cursor-pointer transition-colors"
+                      className="px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-[#154734] border-2 border-emerald-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
                       title="Tester l'interface strictement réservée aux parents"
                     >
                       👨‍👩‍👧 Espace Parent
@@ -300,7 +306,7 @@ export function AuthScreen() {
                       onClick={() => {
                         login('enseignant@ecoleconnect.bf', 'teacher');
                       }}
-                      className="px-2.5 py-1.5 text-xs bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-semibold rounded-lg cursor-pointer transition-colors"
+                      className="px-2.5 py-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-950 border-2 border-amber-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
                       title="Tester l'interface enseignant"
                     >
                       📚 Enseignant
@@ -310,7 +316,7 @@ export function AuthScreen() {
                       onClick={() => {
                         login('direction@ecoleconnect.bf', 'director');
                       }}
-                      className="px-2.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-semibold rounded-lg cursor-pointer transition-colors"
+                      className="px-2.5 py-1.5 text-xs bg-[#154734] hover:bg-[#0c3124] text-amber-300 border-2 border-emerald-700 font-black rounded-lg cursor-pointer transition-colors shadow-xs"
                       title="Tester l'interface direction"
                     >
                       🏫 Direction
@@ -320,7 +326,7 @@ export function AuthScreen() {
                       onClick={() => {
                         login('eleve@ecoleconnect.bf', 'student');
                       }}
-                      className="px-2.5 py-1.5 text-xs bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 font-semibold rounded-lg cursor-pointer transition-colors"
+                      className="px-2.5 py-1.5 text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-950 border-2 border-yellow-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
                       title="Tester l'espace élève et recherche d'établissement"
                     >
                       🎓 Élève
@@ -338,7 +344,7 @@ export function AuthScreen() {
                       setAuthModalMode('forgot');
                       setFeedback(null);
                     }}
-                    className="text-[11px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    className="text-[11px] text-slate-500 hover:text-[#154734] font-medium transition-colors cursor-pointer"
                   >
                     Mot de passe oublié ?
                   </button>
@@ -355,7 +361,7 @@ export function AuthScreen() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nom complet"
-                    className="w-full text-xs sm:text-sm px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    className="w-full text-xs sm:text-sm px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
                     required
                   />
                 </div>
@@ -366,7 +372,7 @@ export function AuthScreen() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email"
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
                     required
                   />
                   <input
@@ -374,7 +380,7 @@ export function AuthScreen() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Téléphone"
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
                     required
                   />
                 </div>
@@ -383,7 +389,7 @@ export function AuthScreen() {
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700"
+                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
                   >
                     <option value="parent">Parent d'élève</option>
                     <option value="teacher">Enseignant</option>
@@ -394,7 +400,7 @@ export function AuthScreen() {
                   <select
                     value={schoolId}
                     onChange={(e) => setSchoolId(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700"
+                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
                   >
                     {schools.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -411,14 +417,14 @@ export function AuthScreen() {
                       type="checkbox"
                       checked={isCaptchaChecked}
                       onChange={(e) => setIsCaptchaChecked(e.target.checked)}
-                      className="w-6 h-6 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer accent-orange-600"
+                      className="w-6 h-6 rounded border-slate-300 text-[#154734] focus:ring-[#154734] cursor-pointer accent-[#154734]"
                     />
                     <span className="text-xs sm:text-sm font-medium text-slate-700">
                       Je suis un humain
                     </span>
                   </label>
                   <div className="flex flex-col items-center text-[9px] text-slate-400 font-mono">
-                    <div className="w-5 h-5 rounded-md bg-teal-500 text-white flex items-center justify-center font-bold text-[10px]">
+                    <div className="w-5 h-5 rounded-md bg-[#154734] text-amber-300 flex items-center justify-center font-bold text-[10px]">
                       h
                     </div>
                     <span className="font-bold text-slate-600">hCaptcha</span>
@@ -426,13 +432,13 @@ export function AuthScreen() {
                   </div>
                 </div>
 
-                {/* Primary Signup Button */}
+                {/* Primary Signup Button - Vert & Or */}
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-[#E08D79] hover:bg-[#D57B65] active:scale-[0.99] text-white text-sm font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
                 >
                   <span>S'inscrire</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
               </form>
             )}
@@ -448,15 +454,15 @@ export function AuthScreen() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email ou téléphone"
-                  className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-800"
+                  className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800"
                   required
                 />
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 bg-[#E08D79] hover:bg-[#D57B65] text-white text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
                 >
                   <span>Envoyer le lien</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
               </form>
             )}
@@ -473,14 +479,14 @@ export function AuthScreen() {
                   </p>
                 </div>
 
-                {/* Plan cards inspired directly by bottom cards in the model screenshot */}
+                {/* Plan cards inspired directly by bottom cards in Vert-Or */}
                 <div className="space-y-2">
                   {/* Plan 1: Mensuel sans engagement */}
                   <div
                     onClick={() => setSelectedPlanId('main')}
                     className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
                       selectedPlanId === 'main'
-                        ? 'border-[#D57B65] bg-orange-50/20 ring-2 ring-orange-100'
+                        ? 'border-[#154734] bg-emerald-50/40 ring-2 ring-emerald-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
@@ -498,11 +504,11 @@ export function AuthScreen() {
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                         selectedPlanId === 'main'
-                          ? 'border-[#D57B65] bg-[#E08D79]'
+                          ? 'border-[#154734] bg-[#154734]'
                           : 'border-slate-300'
                       }`}
                     >
-                      {selectedPlanId === 'main' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      {selectedPlanId === 'main' && <div className="w-2 h-2 rounded-full bg-amber-300" />}
                     </div>
                   </div>
 
@@ -511,12 +517,12 @@ export function AuthScreen() {
                     onClick={() => setSelectedPlanId('advanced')}
                     className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between relative ${
                       selectedPlanId === 'advanced'
-                        ? 'border-[#D57B65] bg-orange-50/30 ring-2 ring-orange-100'
+                        ? 'border-[#154734] bg-emerald-50/50 ring-2 ring-emerald-200 shadow-xs'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
-                    <span className="absolute -top-2.5 right-4 bg-[#D57B65] text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                      OFFRE RECOMMANDÉE
+                    <span className="absolute -top-2.5 right-4 bg-amber-500 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+                      ★ OFFRE RECOMMANDÉE ★
                     </span>
                     <div>
                       <div className="flex items-baseline gap-1">
@@ -532,12 +538,12 @@ export function AuthScreen() {
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                         selectedPlanId === 'advanced'
-                          ? 'border-[#D57B65] bg-[#E08D79]'
+                          ? 'border-[#154734] bg-[#154734]'
                           : 'border-slate-300'
                       }`}
                     >
                       {selectedPlanId === 'advanced' && (
-                        <div className="w-2 h-2 rounded-full bg-white" />
+                        <div className="w-2 h-2 rounded-full bg-amber-300" />
                       )}
                     </div>
                   </div>
@@ -547,7 +553,7 @@ export function AuthScreen() {
                     onClick={() => setSelectedPlanId('free')}
                     className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
                       selectedPlanId === 'free'
-                        ? 'border-[#D57B65] bg-orange-50/20 ring-2 ring-orange-100'
+                        ? 'border-[#154734] bg-emerald-50/40 ring-2 ring-emerald-200'
                         : 'border-slate-200 hover:border-slate-300 bg-white'
                     }`}
                   >
@@ -563,11 +569,11 @@ export function AuthScreen() {
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                         selectedPlanId === 'free'
-                          ? 'border-[#D57B65] bg-[#E08D79]'
+                          ? 'border-[#154734] bg-[#154734]'
                           : 'border-slate-300'
                       }`}
                     >
-                      {selectedPlanId === 'free' && <div className="w-2 h-2 rounded-full bg-white" />}
+                      {selectedPlanId === 'free' && <div className="w-2 h-2 rounded-full bg-amber-300" />}
                     </div>
                   </div>
                 </div>
