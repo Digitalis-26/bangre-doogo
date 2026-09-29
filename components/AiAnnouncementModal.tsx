@@ -7,7 +7,7 @@ import { Sparkles, X, Check, Copy, AlertCircle, Loader2 } from 'lucide-react';
 interface AiAnnouncementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onApplyDraft: (draft: { title: string; content: string; smsVersion: string }) => void;
+  onApplyDraft?: (draft: { title: string; content: string; smsVersion: string }) => void;
 }
 
 const FREQUENT_TOPICS = [

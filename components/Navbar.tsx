@@ -33,6 +33,8 @@ import {
   Globe,
   SlidersHorizontal,
   ChevronRight,
+  CreditCard,
+  Receipt,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -381,6 +383,21 @@ export function Navbar({
                   <span>Liaison Famille</span>
                 </button>
 
+                {/* Scolarité & Paiements en ligne */}
+                <button
+                  onClick={() => {
+                    setActiveTab('scolarite');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'scolarite' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Payer la scolarité et obtenir les quittances"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Scolarité</span>
+                </button>
+
                 {/* Établissements & Recherche ▾ */}
                 <div
                   className="relative flex items-stretch group"
@@ -711,6 +728,21 @@ export function Navbar({
                     </div>
                   )}
                 </div>
+
+                {/* Scolarité & Comptabilité */}
+                <button
+                  onClick={() => {
+                    setActiveTab('scolarite');
+                    setActiveDropdown(null);
+                  }}
+                  className={`px-3 sm:px-3.5 flex items-center gap-1 text-white hover:bg-black/15 transition-colors cursor-pointer whitespace-nowrap ${
+                    activeTab === 'scolarite' ? 'bg-black/25 font-bold text-amber-200' : ''
+                  }`}
+                  title="Suivi des frais de scolarité, relances des impayés et quittances"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Scolarité</span>
+                </button>
 
                 {/* Administration ▾ */}
                 <div

@@ -14,6 +14,10 @@ import {
   SaaSPlan,
   AcademicYear,
   SchoolInquiry,
+  StudentTuitionAccount,
+  PaymentTransaction,
+  TuitionReminderLog,
+  PaymentMethodType,
 } from '@/lib/types';
 import {
   INITIAL_SCHOOLS,
@@ -27,6 +31,9 @@ import {
   SAAS_PLANS,
   INITIAL_ACADEMIC_YEARS,
   INITIAL_SCHOOL_INQUIRIES,
+  INITIAL_TUITION_ACCOUNTS,
+  INITIAL_PAYMENT_TRANSACTIONS,
+  INITIAL_TUITION_REMINDERS,
 } from '@/lib/sample-data';
 
 interface SchoolContextType {
@@ -129,6 +136,41 @@ interface SchoolContextType {
   markNotificationAsRead: (notificationId: string) => void;
   markAllNotificationsAsRead: () => void;
 
+  // Tuition, Payments & Official Receipts
+  tuitionAccounts: StudentTuitionAccount[];
+  paymentTransactions: PaymentTransaction[];
+  tuitionReminders: TuitionReminderLog[];
+  processOnlineTuitionPayment: (data: {
+    studentId: string;
+    amount: number;
+    paymentMethod: PaymentMethodType;
+    methodLabel: string;
+    methodRef?: string;
+    installmentId?: string;
+    installmentName?: string;
+    payerName: string;
+    payerPhone: string;
+  }) => { success: boolean; transaction: PaymentTransaction; message: string };
+  recordManualTuitionPayment: (data: {
+    studentId: string;
+    amount: number;
+    paymentMethod: PaymentMethodType;
+    methodLabel: string;
+    installmentName: string;
+    payerName: string;
+    payerPhone: string;
+    notes?: string;
+  }) => { success: boolean; transaction: PaymentTransaction; message: string };
+  sendTuitionReminder: (
+    studentId: string,
+    customMessage?: string,
+    channel?: 'sms' | 'whatsapp'
+  ) => { success: boolean; message: string; log: TuitionReminderLog };
+  sendBulkTuitionReminders: (
+    studentIds: string[],
+    channel?: 'sms' | 'whatsapp'
+  ) => { success: boolean; sentCount: number; message: string };
+
   // SaaS Plans & Demo Reset
   saasPlans: SaaSPlan[];
   updateSchoolPlan: (schoolId: string, planId: 'free' | 'main' | 'advanced') => void;
@@ -160,6 +202,9 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(INITIAL_ATTENDANCE);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [schoolInquiries, setSchoolInquiries] = useState<SchoolInquiry[]>(INITIAL_SCHOOL_INQUIRIES);
+  const [tuitionAccounts, setTuitionAccounts] = useState<StudentTuitionAccount[]>(INITIAL_TUITION_ACCOUNTS);
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>(INITIAL_PAYMENT_TRANSACTIONS);
+  const [tuitionReminders, setTuitionReminders] = useState<TuitionReminderLog[]>(INITIAL_TUITION_REMINDERS);
 
   // Safely restore persisted data from localStorage on client-side mount only
   useEffect(() => {
@@ -195,6 +240,15 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         const savedInquiries = localStorage.getItem(`${STORAGE_PREFIX}schoolInquiries`);
         if (savedInquiries) setSchoolInquiries(JSON.parse(savedInquiries));
 
+        const savedTuition = localStorage.getItem(`${STORAGE_PREFIX}tuitionAccounts`);
+        if (savedTuition) setTuitionAccounts(JSON.parse(savedTuition));
+
+        const savedPayments = localStorage.getItem(`${STORAGE_PREFIX}paymentTransactions`);
+        if (savedPayments) setPaymentTransactions(JSON.parse(savedPayments));
+
+        const savedReminders = localStorage.getItem(`${STORAGE_PREFIX}tuitionReminders`);
+        if (savedReminders) setTuitionReminders(JSON.parse(savedReminders));
+
         const savedAuth = localStorage.getItem(`${STORAGE_PREFIX}isAuthenticated`);
         if (savedAuth !== null) {
           setIsAuthenticated(JSON.parse(savedAuth));
@@ -222,6 +276,9 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`${STORAGE_PREFIX}attendance`, JSON.stringify(attendance));
       localStorage.setItem(`${STORAGE_PREFIX}notifications`, JSON.stringify(notifications));
       localStorage.setItem(`${STORAGE_PREFIX}schoolInquiries`, JSON.stringify(schoolInquiries));
+      localStorage.setItem(`${STORAGE_PREFIX}tuitionAccounts`, JSON.stringify(tuitionAccounts));
+      localStorage.setItem(`${STORAGE_PREFIX}paymentTransactions`, JSON.stringify(paymentTransactions));
+      localStorage.setItem(`${STORAGE_PREFIX}tuitionReminders`, JSON.stringify(tuitionReminders));
       localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, JSON.stringify(isAuthenticated));
     } catch (e) {
       console.warn('Could not save data to localStorage:', e);
@@ -238,6 +295,9 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     attendance,
     notifications,
     schoolInquiries,
+    tuitionAccounts,
+    paymentTransactions,
+    tuitionReminders,
     isAuthenticated,
   ]);
 
@@ -806,6 +866,296 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  // Helper to generate sequential receipt numbers
+  const generateReceiptNumber = () => {
+    const year = new Date().getFullYear();
+    const count = paymentTransactions.length + 1;
+    return `QUIT-${year}-${count.toString().padStart(4, '0')}`;
+  };
+
+  // Process Online Tuition Payment (Parent)
+  const processOnlineTuitionPayment = (data: {
+    studentId: string;
+    amount: number;
+    paymentMethod: PaymentMethodType;
+    methodLabel: string;
+    methodRef?: string;
+    installmentId?: string;
+    installmentName?: string;
+    payerName: string;
+    payerPhone: string;
+  }) => {
+    const account = tuitionAccounts.find((a) => a.studentId === data.studentId);
+    if (!account) {
+      throw new Error("Compte de scolarité de l'élève introuvable.");
+    }
+
+    const receiptNumber = generateReceiptNumber();
+    const newTotalPaid = account.totalPaid + data.amount;
+    const newBalance = Math.max(0, account.totalDue - newTotalPaid);
+
+    let effectiveInstallmentName = data.installmentName || 'Règlement scolarité';
+    let remaining = data.amount;
+
+    const updatedInstallments = account.installments.map((inst) => {
+      if (data.installmentId && inst.id === data.installmentId) {
+        effectiveInstallmentName = inst.name;
+        const newPaid = inst.paidAmount + remaining;
+        const isPaid = newPaid >= inst.amount;
+        return {
+          ...inst,
+          paidAmount: Math.min(inst.amount, newPaid),
+          status: isPaid ? ('paid' as const) : ('partial' as const),
+          paidDate: new Date().toISOString().split('T')[0],
+        };
+      }
+      if (!data.installmentId && remaining > 0 && inst.paidAmount < inst.amount) {
+        const needed = inst.amount - inst.paidAmount;
+        const toPay = Math.min(needed, remaining);
+        remaining -= toPay;
+        effectiveInstallmentName = inst.name;
+        const isPaid = inst.paidAmount + toPay >= inst.amount;
+        return {
+          ...inst,
+          paidAmount: inst.paidAmount + toPay,
+          status: isPaid ? ('paid' as const) : ('partial' as const),
+          paidDate: new Date().toISOString().split('T')[0],
+        };
+      }
+      return inst;
+    });
+
+    const hasOverdue = updatedInstallments.some(
+      (i) => i.status !== 'paid' && new Date(i.dueDate) < new Date()
+    );
+    const newStatus: 'paid' | 'partial' | 'unpaid' | 'overdue' =
+      newBalance === 0 ? 'paid' : hasOverdue ? 'overdue' : 'partial';
+
+    const updatedAccount: StudentTuitionAccount = {
+      ...account,
+      totalPaid: newTotalPaid,
+      balance: newBalance,
+      status: newStatus,
+      installments: updatedInstallments,
+      lastPaymentDate: new Date().toISOString().split('T')[0],
+    };
+
+    const newTransaction: PaymentTransaction = {
+      id: `pay-${Date.now()}`,
+      receiptNumber,
+      schoolId: account.schoolId,
+      schoolName: currentSchool.name,
+      schoolCity: currentSchool.city,
+      schoolPhone: currentSchool.phone,
+      studentId: account.studentId,
+      studentName: account.studentName,
+      studentMatricule: account.studentMatricule,
+      classId: account.classId,
+      className: account.className,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      methodLabel: data.methodLabel,
+      methodRef:
+        data.methodRef ||
+        `${data.paymentMethod.toUpperCase()}-${Math.floor(100000 + Math.random() * 900000)}`,
+      installmentName: effectiveInstallmentName,
+      payerName: data.payerName,
+      payerPhone: data.payerPhone,
+      recordedBy: `Paiement en ligne (${currentUser.name})`,
+      notes: `Paiement validé avec succès via ${data.methodLabel}`,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      balanceAfter: newBalance,
+    };
+
+    setTuitionAccounts((prev) =>
+      prev.map((a) => (a.studentId === data.studentId ? updatedAccount : a))
+    );
+    setPaymentTransactions((prev) => [newTransaction, ...prev]);
+
+    // Push in-app confirmation notification
+    const notif: AppNotification = {
+      id: `notif-pay-${Date.now()}`,
+      userId: currentUser.id,
+      title: `Paiement reçu — Quittance N° ${receiptNumber}`,
+      message: `Votre règlement de ${data.amount.toLocaleString()} FCFA pour ${account.studentName} a été validé. La quittance officielle est disponible.`,
+      type: 'tuition',
+      channel: 'in_app',
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      studentName: account.studentName,
+    };
+    setNotifications((prev) => [notif, ...prev]);
+
+    return {
+      success: true,
+      transaction: newTransaction,
+      message: `Paiement de ${data.amount.toLocaleString()} FCFA validé. Quittance N° ${receiptNumber} émise.`,
+    };
+  };
+
+  // Record Manual Tuition Payment (Direction / Secrétariat)
+  const recordManualTuitionPayment = (data: {
+    studentId: string;
+    amount: number;
+    paymentMethod: PaymentMethodType;
+    methodLabel: string;
+    installmentName: string;
+    payerName: string;
+    payerPhone: string;
+    notes?: string;
+  }) => {
+    const account = tuitionAccounts.find((a) => a.studentId === data.studentId);
+    if (!account) {
+      throw new Error("Compte de scolarité de l'élève introuvable.");
+    }
+
+    const receiptNumber = generateReceiptNumber();
+    const newTotalPaid = account.totalPaid + data.amount;
+    const newBalance = Math.max(0, account.totalDue - newTotalPaid);
+
+    let remaining = data.amount;
+    const updatedInstallments = account.installments.map((inst) => {
+      if (remaining > 0 && inst.paidAmount < inst.amount) {
+        const needed = inst.amount - inst.paidAmount;
+        const toPay = Math.min(needed, remaining);
+        remaining -= toPay;
+        const isPaid = inst.paidAmount + toPay >= inst.amount;
+        return {
+          ...inst,
+          paidAmount: inst.paidAmount + toPay,
+          status: isPaid ? ('paid' as const) : ('partial' as const),
+          paidDate: new Date().toISOString().split('T')[0],
+        };
+      }
+      return inst;
+    });
+
+    const hasOverdue = updatedInstallments.some(
+      (i) => i.status !== 'paid' && new Date(i.dueDate) < new Date()
+    );
+    const newStatus: 'paid' | 'partial' | 'unpaid' | 'overdue' =
+      newBalance === 0 ? 'paid' : hasOverdue ? 'overdue' : 'partial';
+
+    const updatedAccount: StudentTuitionAccount = {
+      ...account,
+      totalPaid: newTotalPaid,
+      balance: newBalance,
+      status: newStatus,
+      installments: updatedInstallments,
+      lastPaymentDate: new Date().toISOString().split('T')[0],
+    };
+
+    const newTransaction: PaymentTransaction = {
+      id: `pay-${Date.now()}`,
+      receiptNumber,
+      schoolId: account.schoolId,
+      schoolName: currentSchool.name,
+      schoolCity: currentSchool.city,
+      schoolPhone: currentSchool.phone,
+      studentId: account.studentId,
+      studentName: account.studentName,
+      studentMatricule: account.studentMatricule,
+      classId: account.classId,
+      className: account.className,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      methodLabel: data.methodLabel,
+      installmentName: data.installmentName,
+      payerName: data.payerName,
+      payerPhone: data.payerPhone,
+      recordedBy: `Guichet Établissement (${currentUser.name})`,
+      notes: data.notes || `Encaissement enregistré au guichet`,
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+      balanceAfter: newBalance,
+    };
+
+    setTuitionAccounts((prev) =>
+      prev.map((a) => (a.studentId === data.studentId ? updatedAccount : a))
+    );
+    setPaymentTransactions((prev) => [newTransaction, ...prev]);
+
+    return {
+      success: true,
+      transaction: newTransaction,
+      message: `Encaissement de ${data.amount.toLocaleString()} FCFA enregistré. Quittance N° ${receiptNumber} délivrée.`,
+    };
+  };
+
+  // Send Tuition Reminder to Parent
+  const sendTuitionReminder = (
+    studentId: string,
+    customMessage?: string,
+    channel: 'sms' | 'whatsapp' = 'sms'
+  ) => {
+    const account = tuitionAccounts.find((a) => a.studentId === studentId);
+    if (!account) {
+      throw new Error("Compte élève introuvable.");
+    }
+
+    const defaultMsg = `Avis ${currentSchool.name} : Rappel pour la scolarité de ${account.studentName} (${account.className}). Reste dû : ${account.balance.toLocaleString()} FCFA. Règlement possible par Orange Money, Moov ou Wave sur ÉcoleConnect. Merci.`;
+    const message = customMessage || defaultMsg;
+
+    const newLog: TuitionReminderLog = {
+      id: `rem-${Date.now()}`,
+      schoolId: account.schoolId,
+      studentId: account.studentId,
+      studentName: account.studentName,
+      studentMatricule: account.studentMatricule,
+      className: account.className,
+      parentName: account.guardianName,
+      parentPhone: account.guardianPhone,
+      amountDue: account.balance,
+      dueDate: new Date().toISOString().split('T')[0],
+      message,
+      channel,
+      sentAt: new Date().toISOString(),
+      status: 'delivered',
+    };
+
+    setTuitionReminders((prev) => [newLog, ...prev]);
+    setTuitionAccounts((prev) =>
+      prev.map((a) =>
+        a.studentId === studentId
+          ? {
+              ...a,
+              lastReminderSentAt: new Date().toISOString(),
+              remindersCount: (a.remindersCount || 0) + 1,
+            }
+          : a
+      )
+    );
+
+    return {
+      success: true,
+      message: `Relance ${channel.toUpperCase()} transmise avec succès au ${account.guardianPhone} (${account.guardianName}).`,
+      log: newLog,
+    };
+  };
+
+  // Send Bulk Tuition Reminders
+  const sendBulkTuitionReminders = (
+    studentIds: string[],
+    channel: 'sms' | 'whatsapp' = 'sms'
+  ) => {
+    let count = 0;
+    studentIds.forEach((sid) => {
+      try {
+        sendTuitionReminder(sid, undefined, channel);
+        count++;
+      } catch (e) {
+        // continue
+      }
+    });
+
+    return {
+      success: true,
+      sentCount: count,
+      message: `${count} relances ${channel.toUpperCase()} envoyées avec succès aux familles en retard de paiement.`,
+    };
+  };
+
   // Demo Reset
   const resetDemoData = () => {
     if (typeof window !== 'undefined') {
@@ -823,6 +1173,9 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setAttendance(INITIAL_ATTENDANCE);
     setNotifications(INITIAL_NOTIFICATIONS);
     setSchoolInquiries(INITIAL_SCHOOL_INQUIRIES);
+    setTuitionAccounts(INITIAL_TUITION_ACCOUNTS);
+    setPaymentTransactions(INITIAL_PAYMENT_TRANSACTIONS);
+    setTuitionReminders(INITIAL_TUITION_REMINDERS);
     setCurrentSchoolId('school-1');
     setCurrentRole('director');
   };
@@ -883,6 +1236,13 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         notifications,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        tuitionAccounts,
+        paymentTransactions,
+        tuitionReminders,
+        processOnlineTuitionPayment,
+        recordManualTuitionPayment,
+        sendTuitionReminder,
+        sendBulkTuitionReminders,
         saasPlans: SAAS_PLANS,
         updateSchoolPlan,
         resetDemoData,

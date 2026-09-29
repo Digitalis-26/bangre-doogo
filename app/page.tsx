@@ -24,12 +24,13 @@ import { SmsSimulatorModal } from '@/components/SmsSimulatorModal';
 import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { MobileSimulatorFrame } from '@/components/MobileSimulatorFrame';
 import { QuickAccessView } from '@/components/QuickAccessView';
+import { TuitionView } from '@/components/TuitionView';
 import { MapPin, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
 // Strict Role-Based Access Control matrix
 const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
-  parent: ['dashboard', 'announcements', 'attendance', 'liaison', 'school_search', 'quick_access'],
+  parent: ['dashboard', 'announcements', 'attendance', 'liaison', 'scolarite', 'school_search', 'quick_access'],
   teacher: ['dashboard', 'attendance', 'students', 'announcements', 'school_search', 'quick_access'],
   director: [
     'dashboard',
@@ -40,6 +41,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'teachers',
     'school_config',
     'liaison',
+    'scolarite',
     'users_admin',
     'school_search',
     'quick_access',
@@ -52,6 +54,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'students',
     'teachers',
     'liaison',
+    'scolarite',
     'school_search',
     'quick_access',
   ],
@@ -65,6 +68,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
     'teachers',
     'attendance',
     'liaison',
+    'scolarite',
     'school_search',
     'quick_access',
   ],
@@ -74,6 +78,7 @@ const ALLOWED_TABS_BY_ROLE: Record<UserRole, string[]> = {
 const TAB_TITLES: Record<string, string> = {
   dashboard: 'Accueil',
   quick_access: 'Hub Accès Rapide',
+  scolarite: 'Frais & Scolarité',
   announcements: 'Circulaires & Annonces',
   attendance: 'Absences & Justificatifs',
   classes: 'Gestion des Classes',
@@ -94,137 +99,73 @@ const ROLE_NAMES: Record<UserRole, string> = {
   student: 'Élève',
 };
 
-function AppContent() {
+function MainAppContent() {
   const {
     currentRole,
-    publishAnnouncement,
     currentSchool,
-    currentUser,
     isAuthenticated,
+    isMobileDeviceView,
   } = useSchool();
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isSmsModalOpen, setIsSmsModalOpen] = useState(false);
-  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
 
-  // Synchronize activeTab with URL query parameter for autonomous addressable pages
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const tabFromUrl = params.get('tab');
-      if (tabFromUrl && ALLOWED_TABS_BY_ROLE[currentRole]?.includes(tabFromUrl)) {
-        setActiveTab(tabFromUrl);
-      }
-
-      const handlePopState = () => {
-        const p = new URLSearchParams(window.location.search);
-        const t = p.get('tab') || 'dashboard';
-        if (ALLOWED_TABS_BY_ROLE[currentRole]?.includes(t)) {
-          setActiveTab(t);
-        }
-      };
-
-      window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
-    }
-  }, [currentRole]);
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (tab === 'dashboard') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      window.history.pushState({}, '', url.toString());
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // If user is not authenticated, render ONLY the authentication interface
+  // If user is not authenticated, show the authentication screen
   if (!isAuthenticated) {
     return <AuthScreen />;
   }
 
-  // Check if current tab is allowed for current role
-  const isTabAllowed = ALLOWED_TABS_BY_ROLE[currentRole]?.includes(activeTab);
-
-  const handleApplyAiDraft = (draft: { title: string; content: string; smsVersion: string }) => {
-    publishAnnouncement({
-      schoolId: currentSchool.id,
-      targetType: 'all',
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorRole: currentRole === 'teacher' ? 'Enseignant' : 'Direction',
-      title: draft.title,
-      content: draft.content,
-      smsVersion: draft.smsVersion,
-      priority: 'important',
-      category: 'general',
-      totalTargets: currentSchool.parentsCount,
-    });
-    handleTabChange('announcements');
-  };
+  // Check RBAC permission for the active tab
+  const allowedTabs = ALLOWED_TABS_BY_ROLE[currentRole] || ['dashboard'];
+  const hasAccess = allowedTabs.includes(activeTab);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      {/* Top Navbar strictly tailored to current user role */}
+    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950">
+      {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
+        setActiveTab={setActiveTab}
         onOpenAiAssistant={() => setIsAiModalOpen(true)}
         onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-        onOpenPricing={() => setIsSubscriptionModalOpen(true)}
+        onOpenPricing={() => setIsPricingModalOpen(true)}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Role-tailored Hero Section displayed on Dashboard tab */}
-        {activeTab === 'dashboard' && (
-          <HeroSection
-            onNavigateTab={handleTabChange}
-            onOpenPricing={() => setIsSubscriptionModalOpen(true)}
-            onOpenAiAssistant={() => setIsAiModalOpen(true)}
-            onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-          />
-        )}
-
-        {/* Dynamic content wrapped in Mobile Simulator frame when toggled */}
-        <MobileSimulatorFrame activeTab={activeTab} setActiveTab={handleTabChange}>
-          {/* If the active tab is not allowed for this role, show strict Access Denied */}
-          {!isTabAllowed ? (
-            <div className="bg-white p-8 sm:p-12 rounded-3xl border border-red-200 text-center space-y-4 max-w-lg mx-auto shadow-sm my-6">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center mx-auto">
+      {/* Main Content Body */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <MobileSimulatorFrame activeTab={activeTab} setActiveTab={setActiveTab}>
+          {!hasAccess ? (
+            <div className="bg-white rounded-3xl border border-rose-200 p-8 text-center max-w-lg mx-auto my-12 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
                 <ShieldAlert className="w-7 h-7" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900">
-                Accès Restreint
-              </h2>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                L'interface <strong>{TAB_TITLES[activeTab] || activeTab}</strong> n'est pas accessible avec votre profil <strong>{ROLE_NAMES[currentRole]}</strong>.
-                Chaque utilisateur accède uniquement aux fonctionnalités qui le concernent directement.
+              <h3 className="text-lg font-bold text-slate-900">Accès Restreint</h3>
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+                Votre profil actuel (<strong>{ROLE_NAMES[currentRole]}</strong>) n&apos;est pas autorisé à accéder à la section &ldquo;<strong>{TAB_TITLES[activeTab] || activeTab}</strong>&rdquo;.
               </p>
-              <div className="pt-2">
-                <button
-                  onClick={() => handleTabChange('dashboard')}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Retourner à mon Espace {ROLE_NAMES[currentRole]}</span>
-                </button>
-              </div>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="mt-6 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" /> Retour à l&apos;accueil
+              </button>
             </div>
           ) : (
             <>
+              {/* TAB ROUTING */}
               {activeTab === 'dashboard' && (
                 <>
+                  <HeroSection
+                    onNavigateTab={setActiveTab}
+                    onOpenPricing={() => setIsPricingModalOpen(true)}
+                    onOpenAiAssistant={() => setIsAiModalOpen(true)}
+                    onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
+                  />
                   {currentRole === 'parent' && (
                     <ParentPortal
+                      onNavigateTab={setActiveTab}
                       onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-                      onNavigateToSchoolSearch={() => handleTabChange('school_search')}
                     />
                   )}
                   {currentRole === 'teacher' && (
@@ -233,45 +174,24 @@ function AppContent() {
                   {(currentRole === 'director' || currentRole === 'secretary') && (
                     <DirectorPortal
                       onOpenAiAssistant={() => setIsAiModalOpen(true)}
-                      onOpenPricing={() => setIsSubscriptionModalOpen(true)}
+                      onOpenPricing={() => setIsPricingModalOpen(true)}
                     />
                   )}
                   {currentRole === 'super_admin' && <SuperAdminPortal />}
                   {currentRole === 'student' && (
-                    <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-4 max-w-xl mx-auto">
-                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto font-bold text-lg">
-                        🎓
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900">Espace Élève & Orientation</h3>
-                      <p className="text-xs text-slate-500 max-w-md mx-auto">
-                        Accès simplifié aux devoirs et circulaires validés par l'équipe pédagogique, ainsi qu'à l'annuaire des établissements pour votre poursuite d'études.
-                      </p>
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                        <button
-                          onClick={() => handleTabChange('announcements')}
-                          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl cursor-pointer shadow-xs transition-colors"
-                        >
-                          Consulter les devoirs & circulaires
-                        </button>
-                        <button
-                          onClick={() => handleTabChange('school_search')}
-                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-semibold rounded-xl cursor-pointer transition-colors"
-                        >
-                          🔍 Trouver un nouvel établissement
-                        </button>
-                      </div>
-                    </div>
+                    <ParentPortal
+                      onNavigateTab={setActiveTab}
+                      onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
+                    />
                   )}
                 </>
               )}
 
-              {/* Page Autonome : Hub Accès Rapide */}
+              {/* ONGLET SCOLARITÉ : Paiements locaux, suivi des impayés, relances & quittances */}
+              {activeTab === 'scolarite' && <TuitionView />}
+
               {activeTab === 'quick_access' && (
-                <QuickAccessView
-                  onNavigateTab={handleTabChange}
-                  onOpenSmsSimulator={() => setIsSmsModalOpen(true)}
-                  onOpenAiAssistant={() => setIsAiModalOpen(true)}
-                />
+                <QuickAccessView onNavigateTab={setActiveTab} />
               )}
 
               {activeTab === 'announcements' && (
@@ -283,6 +203,8 @@ function AppContent() {
 
               {activeTab === 'attendance' && <AttendanceView />}
 
+              {activeTab === 'liaison' && <LiaisonView />}
+
               {activeTab === 'classes' && <ClassesView />}
 
               {activeTab === 'students' && <StudentsView />}
@@ -290,8 +212,6 @@ function AppContent() {
               {activeTab === 'teachers' && <TeachersView />}
 
               {activeTab === 'school_config' && <SchoolConfigView />}
-
-              {activeTab === 'liaison' && <LiaisonView />}
 
               {activeTab === 'school_search' && <SchoolSearchView />}
 
@@ -301,16 +221,30 @@ function AppContent() {
         </MobileSimulatorFrame>
       </main>
 
-      {/* Global Interactive Modals */}
-      <SubscriptionModal
-        isOpen={isSubscriptionModalOpen}
-        onClose={() => setIsSubscriptionModalOpen(false)}
-      />
+      {/* Regional Institutional Footer */}
+      <footer className="bg-white border-t border-slate-200 mt-12 py-8 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-800">ÉcoleConnect</span>
+            <span>&bull;</span>
+            <span>Système National Intégré de Suivi Pédagogique & Scolarité</span>
+            <span>&bull;</span>
+            <span className="flex items-center gap-1 text-slate-600 font-medium">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              {currentSchool.city} ({currentSchool.country})
+            </span>
+          </div>
 
+          <div className="text-slate-400 text-center md:text-right">
+            Conforme aux normes MENAPLN &bull; Protection des données scolaires
+          </div>
+        </div>
+      </footer>
+
+      {/* MODALS */}
       <AiAnnouncementModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
-        onApplyDraft={handleApplyAiDraft}
       />
 
       <SmsSimulatorModal
@@ -318,29 +252,18 @@ function AppContent() {
         onClose={() => setIsSmsModalOpen(false)}
       />
 
-      {/* Clean Regional Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-12 py-8 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 text-sm">ÉcoleConnect</span>
-            <span>·</span>
-            <span>La communication scolaire, simplement.</span>
-            <span>·</span>
-            <span className="flex items-center gap-1 text-slate-600">
-              <MapPin className="w-3 h-3 text-emerald-600" />
-              <span>Burkina Faso & Afrique de l'Ouest</span>
-            </span>
-          </div>
-        </div>
-      </footer>
+      <SubscriptionModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+      />
     </div>
   );
 }
 
-export default function Page() {
+export default function RootPage() {
   return (
     <SchoolProvider>
-      <AppContent />
+      <MainAppContent />
     </SchoolProvider>
   );
 }

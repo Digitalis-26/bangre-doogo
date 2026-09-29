@@ -167,11 +167,92 @@ export interface AppNotification {
   userId: string;
   title: string;
   message: string;
-  type: 'absence' | 'announcement' | 'link_approved' | 'system';
+  type: 'absence' | 'announcement' | 'link_approved' | 'tuition' | 'system';
   channel: 'in_app' | 'sms' | 'whatsapp';
   isRead: boolean;
   createdAt: string;
   studentName?: string;
+}
+
+export type PaymentMethodType =
+  | 'orange_money'
+  | 'moov_money'
+  | 'wave'
+  | 'coris_money'
+  | 'cash'
+  | 'bank_transfer';
+
+export interface TuitionInstallment {
+  id: string;
+  name: string; // e.g. "Frais d'inscription", "1ère Tranche", "2ème Tranche", "Solde"
+  amount: number;
+  dueDate: string;
+  paidAmount: number;
+  status: 'paid' | 'partial' | 'pending' | 'overdue';
+  paidDate?: string;
+}
+
+export interface StudentTuitionAccount {
+  id: string;
+  schoolId: string;
+  studentId: string;
+  studentName: string;
+  studentMatricule: string;
+  classId: string;
+  className: string;
+  guardianName: string;
+  guardianPhone: string;
+  totalDue: number;
+  totalPaid: number;
+  balance: number;
+  status: 'paid' | 'partial' | 'unpaid' | 'overdue';
+  installments: TuitionInstallment[];
+  lastPaymentDate?: string;
+  lastReminderSentAt?: string;
+  remindersCount: number;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  receiptNumber: string; // e.g. "QUIT-2026-0042"
+  schoolId: string;
+  schoolName: string;
+  schoolCity: string;
+  schoolPhone: string;
+  studentId: string;
+  studentName: string;
+  studentMatricule: string;
+  classId: string;
+  className: string;
+  amount: number;
+  paymentMethod: PaymentMethodType;
+  methodLabel: string;
+  methodRef?: string;
+  installmentName: string;
+  payerName: string;
+  payerPhone: string;
+  recordedBy: string; // "Paiement en ligne (Parent)" or "Guichet Établissement (Secrétariat)"
+  notes?: string;
+  status: 'completed';
+  createdAt: string;
+  balanceAfter: number;
+}
+
+export interface TuitionReminderLog {
+  id: string;
+  schoolId: string;
+  studentId: string;
+  studentName: string;
+  studentMatricule: string;
+  className: string;
+  parentName: string;
+  parentPhone: string;
+  amountDue: number;
+  dueDate: string;
+  message: string;
+  channel: 'sms' | 'whatsapp';
+  sentAt: string;
+  status: 'delivered';
 }
 
 export interface SaaSPlan {

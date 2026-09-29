@@ -38,6 +38,13 @@ export function formatDateNice(dateString?: string | null): string {
   }
 }
 
+export function formatNumber(num: number | string): string {
+  if (num === null || num === undefined) return '0';
+  const val = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(val)) return '0';
+  return val.toLocaleString('fr-FR');
+}
+
 export function formatTime(dateString?: string | null): string {
   if (!dateString) return '';
   try {

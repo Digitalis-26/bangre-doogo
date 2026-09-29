@@ -1,6 +1,6 @@
 {
   "name": "ÉcoleConnect",
-  "description": "Plateforme SaaS de communication école-parents & suivi scolaire",
+  "description": "Plateforme SaaS de communication école-parents, suivi des présences et gestion des frais de scolarité",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

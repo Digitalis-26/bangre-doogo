@@ -16,14 +16,16 @@ import {
   ShieldAlert,
   ChevronRight,
   BookOpen,
+  CreditCard,
 } from 'lucide-react';
 
 interface ParentPortalProps {
-  onOpenSmsSimulator: () => void;
+  onOpenSmsSimulator?: () => void;
   onNavigateToSchoolSearch?: () => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
-export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch }: ParentPortalProps) {
+export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch, onNavigateTab }: ParentPortalProps) {
   const {
     currentUser,
     currentSchool,
@@ -225,6 +227,17 @@ export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch }: P
               <BookOpen className="w-4 h-4" />
               <span>Cahier de liaison</span>
             </button>
+
+            {onNavigateTab && (
+              <button
+                onClick={() => onNavigateTab('scolarite')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200 ml-auto"
+                title="Payer la scolarité et consulter les quittances"
+              >
+                <CreditCard className="w-4 h-4 text-amber-600" />
+                <span>Paiement Scolarité & Quittances &rarr;</span>
+              </button>
+            )}
           </div>
 
           {/* Announcements Tab */}

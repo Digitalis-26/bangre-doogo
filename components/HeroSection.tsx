@@ -264,36 +264,6 @@ export function HeroSection({
             </>
           )}
         </div>
-
-        {/* Proof / Value Metrics Row */}
-        <div className="pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-white font-mono tabular-nums">
-              100%
-            </div>
-            <div className="text-slate-400 text-[11px]">
-              {currentRole === 'parent' ? 'Gratuit pour les familles' : 'Données scolaires protégées'}
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-amber-400 font-mono tabular-nums">
-              -70%
-            </div>
-            <div className="text-slate-400 text-[11px]">
-              Frais de papier & tirages
-            </div>
-          </div>
-
-          <div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-400 font-mono tabular-nums">
-              Instantané
-            </div>
-            <div className="text-slate-400 text-[11px]">
-              Alertes SMS & notifications
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
