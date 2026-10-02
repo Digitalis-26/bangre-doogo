@@ -176,7 +176,7 @@ export const INITIAL_SCHOOLS: School[] = [
     successRate: '96% au CEP Franco-Arabe',
     openAdmissions: true,
     admissionDeadline: '30 Septembre 2026',
-    description: 'Enseignement bilingue Franco-Arabe conforme au programme officiel du MENAPLN allié à une solide éducation religieuse et morale.',
+    description: 'Enseignement bilingue Franco-Arabe d\'excellence allié à une solide éducation religieuse et morale.',
     highlights: ['Programme national officiel + langue arabe renforcée', 'Programme intensif de mémorisation du Saint Coran', 'Cadre rigoureux et respectueux des valeurs'],
     bannerGradient: 'from-teal-700 to-emerald-950',
   },

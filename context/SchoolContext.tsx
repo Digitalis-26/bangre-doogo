@@ -47,13 +47,15 @@ interface SchoolContextType {
   users: User[];
   
   // Auth state & modal
+  currentUserId: string | null;
+  setCurrentUserId: (id: string | null) => void;
   isAuthenticated: boolean;
   authModalOpen: boolean;
   setAuthModalOpen: (open: boolean) => void;
   authModalMode: 'login' | 'signup' | 'forgot';
   setAuthModalMode: (mode: 'login' | 'signup' | 'forgot') => void;
-  login: (email: string, role?: UserRole) => { success: boolean; message: string };
-  signup: (data: { name: string; email: string; phone: string; role: UserRole; schoolId: string }) => { success: boolean; message: string };
+  login: (email: string, password?: string, role?: UserRole) => { success: boolean; message: string };
+  signup: (data: { name: string; email: string; phone: string; password?: string; role: UserRole; schoolId: string; title?: string }) => { success: boolean; message: string };
   logout: () => void;
   resetPassword: (email: string) => { success: boolean; message: string };
 
@@ -171,9 +173,10 @@ interface SchoolContextType {
     channel?: 'sms' | 'whatsapp'
   ) => { success: boolean; sentCount: number; message: string };
 
-  // SaaS Plans & Demo Reset
+  // SaaS Plans & Factory Reset
   saasPlans: SaaSPlan[];
   updateSchoolPlan: (schoolId: string, planId: 'free' | 'main' | 'advanced') => void;
+  resetSystemData: () => void;
   resetDemoData: () => void;
   isHydrated: boolean;
 }
@@ -183,8 +186,9 @@ const SchoolContext = createContext<SchoolContextType | undefined>(undefined);
 const STORAGE_PREFIX = 'ecoleconnect_v1_';
 
 export function SchoolProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRole] = useState<UserRole>('director');
+  const [currentRole, setCurrentRole] = useState<UserRole>('parent');
   const [currentSchoolId, setCurrentSchoolId] = useState<string>('school-1');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isMobileDeviceView, setIsMobileDeviceView] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authModalOpen, setAuthModalOpen] = useState<boolean>(true);
@@ -250,9 +254,15 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         if (savedReminders) setTuitionReminders(JSON.parse(savedReminders));
 
         const savedAuth = localStorage.getItem(`${STORAGE_PREFIX}isAuthenticated`);
-        if (savedAuth !== null) {
-          setIsAuthenticated(JSON.parse(savedAuth));
-          setAuthModalOpen(!JSON.parse(savedAuth));
+        const savedUserId = localStorage.getItem(`${STORAGE_PREFIX}currentUserId`);
+        if (savedAuth === 'true' && savedUserId) {
+          setIsAuthenticated(true);
+          setCurrentUserId(savedUserId);
+          setAuthModalOpen(false);
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUserId(null);
+          setAuthModalOpen(true);
         }
       }
     } catch (e) {
@@ -280,6 +290,11 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem(`${STORAGE_PREFIX}paymentTransactions`, JSON.stringify(paymentTransactions));
       localStorage.setItem(`${STORAGE_PREFIX}tuitionReminders`, JSON.stringify(tuitionReminders));
       localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, JSON.stringify(isAuthenticated));
+      if (currentUserId) {
+        localStorage.setItem(`${STORAGE_PREFIX}currentUserId`, currentUserId);
+      } else {
+        localStorage.removeItem(`${STORAGE_PREFIX}currentUserId`);
+      }
     } catch (e) {
       console.warn('Could not save data to localStorage:', e);
     }
@@ -299,6 +314,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     paymentTransactions,
     tuitionReminders,
     isAuthenticated,
+    currentUserId,
   ]);
 
   // Current School
@@ -313,33 +329,38 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       academicYears[0];
   }, [academicYears, currentSchool.id]);
 
-  // Current User based on Role
+  // Current User based on currentUserId or active role
   const currentUser = useMemo(() => {
-    const matchedUser = users.find(
+    if (currentUserId) {
+      const matched = users.find((u) => u.id === currentUserId);
+      if (matched) return matched;
+    }
+
+    const matchedByRole = users.find(
       (u) => u.role === currentRole && (u.schoolId === currentSchool.id || u.schoolId === 'all')
     );
-    if (matchedUser) return matchedUser;
+    if (matchedByRole) return matchedByRole;
 
     return {
-      id: `user-${currentRole}-demo`,
+      id: currentUserId || `user-${currentRole}`,
       name:
         currentRole === 'director'
-          ? 'Direction École'
+          ? 'Direction Établissement'
           : currentRole === 'teacher'
-          ? 'Enseignant Démo'
+          ? 'Enseignant Titulaire'
           : currentRole === 'parent'
           ? 'Parent d\'élève'
           : currentRole === 'secretary'
-          ? 'Secrétaire de Scolarité'
+          ? 'Secrétariat Scolaire'
           : 'Administrateur',
       email: `${currentRole}@ecoleconnect.bf`,
       phone: '+226 70 00 00 00',
       role: currentRole,
       schoolId: currentSchool.id,
-      title: 'Compte Démonstration',
+      title: 'Compte Personnel',
       status: 'active' as const,
     };
-  }, [currentRole, currentSchool.id, users]);
+  }, [currentUserId, currentRole, currentSchool.id, users]);
 
   // Parent's linked children
   const myChildren = useMemo(() => {
@@ -360,54 +381,124 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
   }, [selectedChildIdState, myChildren]);
 
   // Auth Operations
-  const login = (email: string, role?: UserRole) => {
-    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  const login = (emailOrPhone: string, password?: string, role?: UserRole) => {
+    const query = emailOrPhone.trim().toLowerCase();
+    const cleanPhone = query.replace(/\s+/g, '');
+
+    const existing = users.find(
+      (u) =>
+        u.email.toLowerCase() === query ||
+        u.phone.replace(/\s+/g, '') === cleanPhone
+    );
+
     if (existing) {
       if (existing.status === 'suspended') {
-        return { success: false, message: 'Ce compte est actuellement suspendu par la direction.' };
+        return { success: false, message: 'Ce compte est actuellement suspendu par la direction de l\'établissement.' };
       }
+
+      // Password verification if password was set on the account
+      if (existing.password && password && existing.password !== password) {
+        return { success: false, message: 'Mot de passe incorrect. Veuillez vérifier votre saisie.' };
+      }
+
+      setCurrentUserId(existing.id);
       setCurrentRole(existing.role);
       if (existing.schoolId !== 'all') {
         setCurrentSchoolId(existing.schoolId);
       }
       setIsAuthenticated(true);
       setAuthModalOpen(false);
-      return { success: true, message: `Connexion réussie en tant que ${existing.name} (${existing.role}).` };
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, 'true');
+        localStorage.setItem(`${STORAGE_PREFIX}currentUserId`, existing.id);
+      }
+
+      return { success: true, message: `Connexion réussie. Bienvenue, ${existing.name} !` };
     }
 
+    // Role-based login if role is specified
     if (role) {
-      setCurrentRole(role);
+      const roleUser = users.find((u) => u.role === role);
+      if (roleUser) {
+        setCurrentUserId(roleUser.id);
+        setCurrentRole(roleUser.role);
+        if (roleUser.schoolId !== 'all') setCurrentSchoolId(roleUser.schoolId);
+      } else {
+        setCurrentRole(role);
+      }
       setIsAuthenticated(true);
       setAuthModalOpen(false);
       return { success: true, message: `Session démarrée avec le rôle ${role}.` };
     }
 
-    return { success: false, message: 'Aucun compte associé à cet email. Vérifiez l\'adresse ou inscrivez-vous.' };
+    return {
+      success: false,
+      message: 'Identifiants non reconnus. Veuillez vérifier votre saisie ou créer un compte.',
+    };
   };
 
-  const signup = (data: { name: string; email: string; phone: string; role: UserRole; schoolId: string }) => {
+  const signup = (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    role: UserRole;
+    schoolId: string;
+    title?: string;
+  }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
+      return { success: false, message: 'Un compte existe déjà avec cette adresse email.' };
+    }
+
+    const newUserId = `user-${Date.now()}`;
     const newUser: User = {
-      id: `user-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
+      id: newUserId,
+      name: data.name.trim(),
+      email: cleanEmail,
+      phone: data.phone.trim(),
+      password: data.password || 'Ecole2026!',
       role: data.role,
       schoolId: data.schoolId || currentSchool.id,
       status: 'active',
-      title: data.role === 'teacher' ? 'Enseignant' : data.role === 'parent' ? 'Parent d\'élève' : 'Personnel Scolaire',
+      title:
+        data.title ||
+        (data.role === 'parent'
+          ? 'Parent d\'élève (Responsable Légal)'
+          : data.role === 'teacher'
+          ? 'Enseignant Titulaire'
+          : data.role === 'director'
+          ? 'Direction Établissement'
+          : 'Secrétariat Scolaire'),
       lastLogin: new Date().toISOString(),
     };
 
     setUsers((prev) => [newUser, ...prev]);
+    setCurrentUserId(newUserId);
     setCurrentRole(data.role);
     if (data.schoolId) setCurrentSchoolId(data.schoolId);
     setIsAuthenticated(true);
     setAuthModalOpen(false);
-    return { success: true, message: `Compte créé avec succès pour ${data.name}. Bienvenue sur ÉcoleConnect !` };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`${STORAGE_PREFIX}isAuthenticated`, 'true');
+      localStorage.setItem(`${STORAGE_PREFIX}currentUserId`, newUserId);
+    }
+
+    return {
+      success: true,
+      message: `Compte personnel créé avec succès pour ${data.name}. Bienvenue sur ÉcoleConnect !`,
+    };
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    setCurrentUserId(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(`${STORAGE_PREFIX}isAuthenticated`);
+      localStorage.removeItem(`${STORAGE_PREFIX}currentUserId`);
+    }
     setAuthModalMode('login');
     setAuthModalOpen(true);
   };
@@ -1156,8 +1247,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     };
   };
 
-  // Demo Reset
-  const resetDemoData = () => {
+  // Factory Reset
+  const resetSystemData = () => {
     if (typeof window !== 'undefined') {
       Object.keys(localStorage)
         .filter((k) => k.startsWith(STORAGE_PREFIX))
@@ -1186,6 +1277,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         currentRole,
         setCurrentRole,
         currentUser,
+        currentUserId,
+        setCurrentUserId,
         currentSchool,
         setCurrentSchoolId,
         schools,
@@ -1245,7 +1338,8 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
         sendBulkTuitionReminders,
         saasPlans: SAAS_PLANS,
         updateSchoolPlan,
-        resetDemoData,
+        resetSystemData,
+        resetDemoData: resetSystemData,
         isHydrated,
       }}
     >

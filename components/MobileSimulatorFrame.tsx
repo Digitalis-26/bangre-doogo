@@ -37,14 +37,14 @@ export function MobileSimulatorFrame({
       <div className="mb-4 flex items-center justify-between gap-4 max-w-[420px] w-full px-2 text-xs text-slate-600">
         <span className="flex items-center gap-1.5 font-medium">
           <Smartphone className="w-4 h-4 text-emerald-700" />
-          <span>Émulateur Mobile PWA (Expérience Smartphone Parent/Prof)</span>
+          <span>Affichage Smartphone PWA (Expérience Mobile)</span>
         </span>
         <button
           onClick={() => setIsMobileDeviceView(false)}
           className="text-slate-400 hover:text-slate-700 flex items-center gap-1 cursor-pointer font-semibold"
         >
           <X className="w-3.5 h-3.5" />
-          <span>Quitter l'émulateur</span>
+          <span>Vue Grand Écran</span>
         </button>
       </div>
 

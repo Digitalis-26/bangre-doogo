@@ -15,6 +15,7 @@ import {
   Building2,
   MessageSquare,
   Clock,
+  CreditCard,
 } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -160,11 +161,11 @@ export function HeroSection({
               </button>
 
               <button
-                onClick={onOpenSmsSimulator}
-                className="px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white"
+                onClick={() => onNavigateTab('scolarite')}
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
-                <span>Simulateur SMS</span>
+                <CreditCard className="w-4 h-4 text-slate-950" />
+                <span>Payer la Scolarité & Quittances</span>
               </button>
             </>
           )}
@@ -219,6 +220,14 @@ export function HeroSection({
 
           {(currentRole === 'director' || currentRole === 'secretary') && (
             <>
+              <button
+                onClick={() => onNavigateTab('scolarite')}
+                className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm"
+              >
+                <CreditCard className="w-4 h-4 text-slate-950" />
+                <span>Suivi Scolarité & Relances Impayés</span>
+              </button>
+
               <button
                 onClick={onOpenAiAssistant}
                 className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm"

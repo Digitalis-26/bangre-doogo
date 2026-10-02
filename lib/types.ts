@@ -11,6 +11,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
+  password?: string;
   role: UserRole;
   schoolId: string;
   status?: 'active' | 'suspended';

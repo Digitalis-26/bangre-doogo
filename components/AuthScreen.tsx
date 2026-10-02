@@ -5,13 +5,15 @@ import { useSchool } from '@/context/SchoolContext';
 import {
   Eye,
   EyeOff,
-  AlertTriangle,
-  Sparkles,
   ArrowRight,
   CheckCircle2,
   AlertCircle,
   Building2,
-  Moon,
+  ShieldCheck,
+  Lock,
+  UserCheck,
+  GraduationCap,
+  Sparkles,
 } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
@@ -24,137 +26,195 @@ export function AuthScreen() {
     resetPassword,
     schools,
     currentSchool,
-    saasPlans,
-    updateSchoolPlan,
+    createSchool,
   } = useSchool();
 
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<UserRole>('parent');
-  const [schoolId, setSchoolId] = useState(currentSchool.id);
-  const [selectedPlanId, setSelectedPlanId] = useState<'free' | 'main' | 'advanced'>('main');
-  const [isCaptchaChecked, setIsCaptchaChecked] = useState(false);
+  const [schoolName, setSchoolName] = useState(currentSchool.name);
+  const [agreeTerms, setAgreeTerms] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isCaptchaChecked) {
-      setFeedback({ success: false, message: 'Veuillez cocher la case "Je suis un humain".' });
+    if (!email.trim() || !password) {
+      setFeedback({ success: false, message: 'Veuillez saisir votre email ou téléphone ainsi que votre mot de passe.' });
       return;
     }
-    const res = login(email, role);
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    const res = login(email, password);
     setFeedback(res);
+    setIsSubmitting(false);
   };
 
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone) {
-      setFeedback({ success: false, message: 'Veuillez remplir tous les champs obligatoires.' });
+    if (!name.trim() || !email.trim() || !phone.trim() || !password || !schoolName.trim()) {
+      setFeedback({ success: false, message: 'Veuillez renseigner tous les champs obligatoires (dont l\'établissement).' });
       return;
     }
-    if (!isCaptchaChecked) {
-      setFeedback({ success: false, message: 'Veuillez cocher la case "Je suis un humain".' });
+
+    if (password.length < 6) {
+      setFeedback({ success: false, message: 'Le mot de passe doit comporter au moins 6 caractères.' });
       return;
     }
-    const res = signup({ name, email, phone, role, schoolId });
-    if (role === 'director' || role === 'secretary') {
-      updateSchoolPlan(schoolId, selectedPlanId);
+
+    if (password !== confirmPassword) {
+      setFeedback({ success: false, message: 'Les deux mots de passe ne correspondent pas.' });
+      return;
     }
+
+    if (!agreeTerms) {
+      setFeedback({ success: false, message: 'Veuillez accepter les conditions d\'utilisation et la politique de confidentialité.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setFeedback(null);
+
+    // Resolve or create school by name
+    const trimmedSchool = schoolName.trim();
+    const existingSchool = schools.find(
+      (s) => s.name.toLowerCase() === trimmedSchool.toLowerCase()
+    );
+
+    let targetSchoolId = existingSchool ? existingSchool.id : '';
+
+    if (!existingSchool) {
+      const created = createSchool({
+        name: trimmedSchool,
+        city: 'Ouagadougou',
+        country: 'Burkina Faso',
+        phone: phone.trim() || '+226 25 00 00 00',
+        email: email.trim().toLowerCase(),
+        plan: 'main',
+        monthlyFee: 10000,
+        code: trimmedSchool.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'ECOL',
+        status: 'active',
+        cycles: ['Maternelle', 'Primaire', 'Collège'],
+        type: 'Privé laïc',
+      });
+      targetSchoolId = created.id;
+    }
+
+    const res = signup({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      password,
+      role,
+      schoolId: targetSchoolId,
+    });
+
     setFeedback(res);
+    setIsSubmitting(false);
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-    const res = resetPassword(email);
+    if (!email.trim()) {
+      setFeedback({ success: false, message: 'Veuillez saisir votre adresse email ou téléphone.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    const res = resetPassword(email.trim());
     setFeedback(res);
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="min-h-screen w-full bg-white flex flex-col justify-between text-slate-900 select-none">
-      {/* Top Brand Header matching exactly the model screenshot */}
-      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white">
+    <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-between text-slate-900">
+      {/* Top Header */}
+      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 bg-white">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full border-2 border-[#154734] bg-emerald-50 flex items-center justify-center text-[#154734] font-black text-sm shadow-xs">
             EC
           </div>
-          <span className="text-lg font-black text-[#154734] tracking-tight flex items-center gap-1">
-            <span>ÉcoleConnect</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          </span>
+          <div>
+            <span className="text-lg font-black text-[#154734] tracking-tight flex items-center gap-1">
+              <span>ÉcoleConnect</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            </span>
+            <p className="text-[10px] text-slate-500 font-medium">Portail Scolaire Officiel</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            className="p-2 text-slate-700 hover:text-[#154734] cursor-pointer transition-colors"
-            title="Thème"
-          >
-            <Moon className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthModalMode('login');
-              setFeedback(null);
-            }}
-            className="px-4 py-2 bg-[#154734] hover:bg-[#0c3124] text-amber-300 text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer border border-emerald-700/40"
-          >
-            Se connecter
-          </button>
+        <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+          <ShieldCheck className="w-4 h-4 text-emerald-700" />
+          <span className="hidden sm:inline">Chiffrement SSL 256-bit Sécurisé</span>
         </div>
       </header>
 
-      {/* Main Single Centered Form Card */}
+      {/* Main Container */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[480px] my-auto">
-          {/* Top Title matching screenshot */}
-          <div className="text-center mb-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
-              <span>
-                {authModalMode === 'signup'
-                  ? 'Créer un compte'
-                  : authModalMode === 'forgot'
-                  ? 'Mot de passe'
-                  : 'Bon retour'}
-              </span>
-              <span className="text-2xl">👋</span>
+        <div className="w-full max-w-md my-auto">
+          {/* Header Title */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              {authModalMode === 'signup'
+                ? 'Créer un compte'
+                : authModalMode === 'forgot'
+                ? 'Mot de passe oublié'
+                : 'Connexion'}
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               {authModalMode === 'signup'
-                ? 'Inscris-toi pour accéder à ta plateforme scolaire.'
+                ? 'Remplissez vos informations pour rejoindre votre établissement.'
                 : authModalMode === 'forgot'
-                ? 'Saisis tes identifiants pour réinitialiser ton accès.'
-                : 'Connecte-toi pour accéder à ta plateforme.'}
+                ? 'Saisissez vos identifiants pour réinitialiser votre accès.'
+                : 'Accédez à votre espace sécurisé en renseignant vos identifiants.'}
             </p>
           </div>
 
-          {/* Clean White Card with Rounded-3xl and Border */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-7 space-y-4 relative overflow-hidden">
-            {/* Top Vert-Or Decorative Accent Strip */}
+          {/* Form Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-5 relative overflow-hidden">
+            {/* Top Accent Strip Vert-Or */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#154734] via-amber-400 to-[#154734]" />
 
-            {/* Informational Callout 1 (Or / Doré) */}
-            <div className="p-3.5 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50/90 to-yellow-50/40 flex items-start gap-2.5 text-slate-800 text-xs leading-relaxed">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <span>
-                Suivi scolaire en direct : notes, devoirs, circulaires et alertes d'absences en temps réel.
-              </span>
+            {/* Mode Switcher Tabs */}
+            <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('login');
+                  setFeedback(null);
+                }}
+                className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  authModalMode === 'login'
+                    ? 'bg-white text-[#154734] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Se connecter
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthModalMode('signup');
+                  setFeedback(null);
+                }}
+                className={`py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  authModalMode === 'signup'
+                    ? 'bg-white text-[#154734] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Créer un compte
+              </button>
             </div>
 
-            {/* Informational Callout 2 (Vert / Émeraude) */}
-            <div className="p-3.5 rounded-xl border border-emerald-300 bg-gradient-to-r from-emerald-50/90 to-teal-50/40 flex items-start gap-2.5 text-slate-800 text-xs leading-relaxed">
-              <Sparkles className="w-4 h-4 text-[#154734] shrink-0 mt-0.5" />
-              <span>
-                Plateforme unifiée école & familles avec liaison sécurisée et SMS d'urgence automatiques.
-              </span>
-            </div>
-
-            {/* Feedback alert */}
+            {/* Feedback Alert */}
             {feedback && (
               <div
                 className={`p-3 rounded-xl text-xs flex items-start gap-2 ${
@@ -164,428 +224,305 @@ export function AuthScreen() {
                 }`}
               >
                 {feedback.success ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
                 ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
                 )}
                 <span className="leading-snug">{feedback.message}</span>
               </div>
             )}
 
-            {/* Switch Header: CONNEXION / INSCRIPTION */}
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs font-black tracking-wider uppercase text-slate-900 font-mono">
-                {authModalMode === 'signup'
-                  ? 'INSCRIPTION'
-                  : authModalMode === 'forgot'
-                  ? 'RÉCUPÉRATION'
-                  : 'CONNEXION'}
-              </span>
-              {authModalMode === 'login' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthModalMode('signup');
-                    setFeedback(null);
-                  }}
-                  className="text-xs font-bold text-[#154734] hover:text-amber-600 transition-colors cursor-pointer"
-                >
-                  Pas de compte ? S'inscrire
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthModalMode('login');
-                    setFeedback(null);
-                  }}
-                  className="text-xs font-bold text-[#154734] hover:text-amber-600 transition-colors cursor-pointer"
-                >
-                  Déjà un compte ? Se connecter
-                </button>
-              )}
-            </div>
-
-            {/* LOGIN FORM */}
+            {/* ======================================================= */}
+            {/* 1. LOGIN FORM */}
+            {/* ======================================================= */}
             {authModalMode === 'login' && (
-              <form onSubmit={handleLoginSubmit} className="space-y-3">
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Adresse Email ou Numéro de Téléphone
+                  </label>
                   <input
-                    type="email"
+                    type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    placeholder="ex: hamed.k@gmail.com ou 70 12 34 56"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
                     required
                   />
                 </div>
 
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mot de passe (min. 12 caractères, majuscule + n...)"
-                    className="w-full text-xs sm:text-sm pl-4 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#154734] cursor-pointer p-1 transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                {/* Profile selector */}
                 <div>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
-                  >
-                    <option value="parent">Profil : Parent d'élève</option>
-                    <option value="teacher">Profil : Enseignant</option>
-                    <option value="director">Profil : Direction d'école</option>
-                    <option value="secretary">Profil : Secrétariat</option>
-                    <option value="super_admin">Profil : Super Administrateur</option>
-                  </select>
-                </div>
-
-                {/* Captcha Box styled as hCaptcha */}
-                <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex items-center justify-between">
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Mot de passe
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthModalMode('forgot');
+                        setFeedback(null);
+                      }}
+                      className="text-[11px] text-[#154734] hover:underline font-semibold cursor-pointer"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  </div>
+                  <div className="relative">
                     <input
-                      type="checkbox"
-                      checked={isCaptchaChecked}
-                      onChange={(e) => setIsCaptchaChecked(e.target.checked)}
-                      className="w-6 h-6 rounded border-slate-300 text-[#154734] focus:ring-[#154734] cursor-pointer accent-[#154734]"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full text-xs sm:text-sm pl-3.5 pr-10 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
                     />
-                    <span className="text-xs sm:text-sm font-medium text-slate-700">
-                      Je suis un humain
-                    </span>
-                  </label>
-                  <div className="flex flex-col items-center text-[9px] text-slate-400 font-mono">
-                    <div className="w-5 h-5 rounded-md bg-[#154734] text-amber-300 flex items-center justify-center font-bold text-[10px]">
-                      h
-                    </div>
-                    <span className="font-bold text-slate-600">hCaptcha</span>
-                    <span className="text-[8px] text-slate-400">Confidentialité - Conditions</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#154734] cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
-                {/* Primary Action Button - Vert & Or */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
+                  disabled={isSubmitting}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Se connecter</span>
+                  <span>{isSubmitting ? 'Connexion en cours...' : 'Se connecter'}</span>
                   <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
 
-                {/* Quick login demo links - Vert & Or Theme */}
-                <div className="pt-2 border-t border-slate-100">
-                  <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider text-center mb-1.5 flex items-center justify-center gap-1">
-                    <span className="text-amber-500">★</span>
-                    <span>Accès rapide démo par profil</span>
-                    <span className="text-amber-500">★</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 justify-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        login('parent@ecoleconnect.bf', 'parent');
-                      }}
-                      className="px-2.5 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-[#154734] border-2 border-emerald-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
-                      title="Tester l'interface strictement réservée aux parents"
-                    >
-                      👨‍👩‍👧 Espace Parent
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        login('enseignant@ecoleconnect.bf', 'teacher');
-                      }}
-                      className="px-2.5 py-1.5 text-xs bg-amber-50 hover:bg-amber-100 text-amber-950 border-2 border-amber-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
-                      title="Tester l'interface enseignant"
-                    >
-                      📚 Enseignant
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        login('direction@ecoleconnect.bf', 'director');
-                      }}
-                      className="px-2.5 py-1.5 text-xs bg-[#154734] hover:bg-[#0c3124] text-amber-300 border-2 border-emerald-700 font-black rounded-lg cursor-pointer transition-colors shadow-xs"
-                      title="Tester l'interface direction"
-                    >
-                      🏫 Direction
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        login('eleve@ecoleconnect.bf', 'student');
-                      }}
-                      className="px-2.5 py-1.5 text-xs bg-yellow-50 hover:bg-yellow-100 text-yellow-950 border-2 border-yellow-400 font-bold rounded-lg cursor-pointer transition-colors shadow-2xs"
-                      title="Tester l'espace élève et recherche d'établissement"
-                    >
-                      🎓 Élève
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-center text-slate-400 mt-2">
-                    Cloisonnement strict : Chaque profil n'accède qu'aux fonctions qui le concernent (orientation et recherche d'établissement pour élèves et parents).
-                  </p>
-                </div>
-
-                <div className="text-center pt-0.5">
+                <div className="pt-2 text-center text-xs text-slate-500">
+                  <span>Vous n&apos;avez pas encore de compte ? </span>
                   <button
                     type="button"
                     onClick={() => {
-                      setAuthModalMode('forgot');
+                      setAuthModalMode('signup');
                       setFeedback(null);
                     }}
-                    className="text-[11px] text-slate-500 hover:text-[#154734] font-medium transition-colors cursor-pointer"
+                    className="font-bold text-[#154734] hover:underline cursor-pointer"
                   >
-                    Mot de passe oublié ?
+                    Créer un compte
                   </button>
                 </div>
               </form>
             )}
 
-            {/* SIGNUP FORM */}
+            {/* ======================================================= */}
+            {/* 2. SIGNUP FORM */}
+            {/* ======================================================= */}
             {authModalMode === 'signup' && (
-              <form onSubmit={handleSignupSubmit} className="space-y-3">
+              <form onSubmit={handleSignupSubmit} className="space-y-3.5">
                 <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Nom et Prénom <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Nom complet"
-                    className="w-full text-xs sm:text-sm px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
+                    placeholder="ex: Hamed Koura"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email"
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
-                    required
-                  />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Téléphone"
-                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800 placeholder-slate-400 transition-all"
-                    required
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Adresse Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="hamed.k@gmail.com"
+                      className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Numéro Téléphone (SMS) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+226 70 00 00 00"
+                      className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
-                  >
-                    <option value="parent">Parent d'élève</option>
-                    <option value="teacher">Enseignant</option>
-                    <option value="director">Directeur d'école</option>
-                    <option value="secretary">Secrétariat</option>
-                  </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Mot de passe <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Min. 6 caractères"
+                      className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
+                    />
+                  </div>
 
-                  <select
-                    value={schoolId}
-                    onChange={(e) => setSchoolId(e.target.value)}
-                    className="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl bg-slate-50/60 text-slate-700 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none"
-                  >
-                    {schools.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Confirmer le mot de passe <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
+                    />
+                  </div>
                 </div>
 
-                {/* Captcha Box */}
-                <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/50 flex items-center justify-between">
-                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Votre rôle sur la plateforme <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as UserRole)}
+                      className="w-full text-xs px-3 py-2 border border-slate-300 rounded-xl bg-white text-slate-800 focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden"
+                    >
+                      <option value="parent">👨‍👩‍👧 Parent d&apos;élève</option>
+                      <option value="director">🏫 Direction d&apos;établissement</option>
+                      <option value="teacher">📚 Enseignant</option>
+                      <option value="secretary">🏢 Secrétariat & Scolarité</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Établissement <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      list="schools-datalist"
+                      value={schoolName}
+                      onChange={(e) => setSchoolName(e.target.value)}
+                      placeholder="Nom de votre école / établissement"
+                      className="w-full text-xs sm:text-sm px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                      required
+                    />
+                    <datalist id="schools-datalist">
+                      {schools.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.city}
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                {/* Privacy Agreement Checkbox */}
+                <div className="pt-1">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-slate-600 select-none text-[11px]">
                     <input
                       type="checkbox"
-                      checked={isCaptchaChecked}
-                      onChange={(e) => setIsCaptchaChecked(e.target.checked)}
-                      className="w-6 h-6 rounded border-slate-300 text-[#154734] focus:ring-[#154734] cursor-pointer accent-[#154734]"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#154734] focus:ring-[#154734] accent-[#154734]"
                     />
-                    <span className="text-xs sm:text-sm font-medium text-slate-700">
-                      Je suis un humain
+                    <span>
+                      J&apos;accepte les conditions d&apos;utilisation et la protection des données scolaires conforme à la Loi n°010-2004/AN.
                     </span>
                   </label>
-                  <div className="flex flex-col items-center text-[9px] text-slate-400 font-mono">
-                    <div className="w-5 h-5 rounded-md bg-[#154734] text-amber-300 flex items-center justify-center font-bold text-[10px]">
-                      h
-                    </div>
-                    <span className="font-bold text-slate-600">hCaptcha</span>
-                    <span className="text-[8px] text-slate-400">Confidentialité - Conditions</span>
-                  </div>
                 </div>
 
-                {/* Primary Signup Button - Vert & Or */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
+                  disabled={isSubmitting}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] active:scale-[0.99] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>S'inscrire</span>
+                  <span>{isSubmitting ? 'Création du compte...' : 'Créer mon compte'}</span>
                   <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
+
+                <div className="pt-2 text-center text-xs text-slate-500">
+                  <span>Vous avez déjà un compte ? </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalMode('login');
+                      setFeedback(null);
+                    }}
+                    className="font-bold text-[#154734] hover:underline cursor-pointer"
+                  >
+                    Se connecter
+                  </button>
+                </div>
               </form>
             )}
 
-            {/* FORGOT PASSWORD FORM */}
+            {/* ======================================================= */}
+            {/* 3. FORGOT PASSWORD FORM */}
+            {/* ======================================================= */}
             {authModalMode === 'forgot' && (
-              <form onSubmit={handleForgotSubmit} className="space-y-3">
-                <p className="text-xs text-slate-600">
-                  Saisissez votre email ou téléphone pour recevoir un code temporaire de reconnexion.
+              <form onSubmit={handleForgotSubmit} className="space-y-4">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Saisissez l&apos;adresse email ou le numéro de téléphone associé à votre compte. Un lien de réinitialisation sécurisé vous sera envoyé.
                 </p>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email ou téléphone"
-                  className="w-full text-xs sm:text-sm px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-none text-slate-800"
-                  required
-                />
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Adresse Email ou Téléphone
+                  </label>
+                  <input
+                    type="text"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hamed.k@gmail.com"
+                    className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600/20 focus:border-[#154734] outline-hidden text-slate-800"
+                    required
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer tracking-wide"
+                  disabled={isSubmitting}
+                  className="w-full py-3 px-4 bg-gradient-to-r from-[#154734] via-[#1b5e20] to-[#154734] hover:from-[#0f3828] hover:to-[#1b5e20] text-amber-300 hover:text-amber-200 border border-emerald-600/50 text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Envoyer le lien</span>
+                  <span>{isSubmitting ? 'Envoi...' : 'Envoyer le lien de réinitialisation'}</span>
                   <ArrowRight className="w-4 h-4 text-amber-300" />
                 </button>
+
+                <div className="pt-2 text-center text-xs text-slate-500">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalMode('login');
+                      setFeedback(null);
+                    }}
+                    className="font-bold text-[#154734] hover:underline cursor-pointer"
+                  >
+                    ← Revenir à la page de connexion
+                  </button>
+                </div>
               </form>
-            )}
-
-            {/* BOTTOM SECTION: FORMULES DE SOUSCRIPTION (SEULEMENT LORS DE LA SOUSCRIPTION / COMPTE ÉCOLE) */}
-            {authModalMode === 'signup' && (role === 'director' || role === 'secretary') && (
-              <div className="pt-3 border-t border-slate-100 space-y-2.5">
-                <div className="text-center">
-                  <span className="text-[11px] font-black tracking-wider uppercase text-slate-800 font-mono">
-                    CHOIX DU FORFAIT ÉTABLISSEMENT
-                  </span>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Choisissez une formule pour l'école. L'accès reste 100% gratuit pour les familles.
-                  </p>
-                </div>
-
-                {/* Plan cards inspired directly by bottom cards in Vert-Or */}
-                <div className="space-y-2">
-                  {/* Plan 1: Mensuel sans engagement */}
-                  <div
-                    onClick={() => setSelectedPlanId('main')}
-                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                      selectedPlanId === 'main'
-                        ? 'border-[#154734] bg-emerald-50/40 ring-2 ring-emerald-200'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-base font-extrabold text-slate-900 font-mono">
-                          10 000 FCFA
-                        </span>
-                        <span className="text-xs text-slate-500">/mois</span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        Sans engagement · Jusqu'à 15 classes
-                      </div>
-                    </div>
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPlanId === 'main'
-                          ? 'border-[#154734] bg-[#154734]'
-                          : 'border-slate-300'
-                      }`}
-                    >
-                      {selectedPlanId === 'main' && <div className="w-2 h-2 rounded-full bg-amber-300" />}
-                    </div>
-                  </div>
-
-                  {/* Plan 2: Offre annuelle avantageuse avec badge */}
-                  <div
-                    onClick={() => setSelectedPlanId('advanced')}
-                    className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between relative ${
-                      selectedPlanId === 'advanced'
-                        ? 'border-[#154734] bg-emerald-50/50 ring-2 ring-emerald-200 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <span className="absolute -top-2.5 right-4 bg-amber-500 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                      ★ OFFRE RECOMMANDÉE ★
-                    </span>
-                    <div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-base font-extrabold text-slate-900 font-mono">
-                          25 000 FCFA
-                        </span>
-                        <span className="text-xs text-slate-500">/mois</span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        Classes illimitées · Multi-établissements & SMS prioritaires
-                      </div>
-                    </div>
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPlanId === 'advanced'
-                          ? 'border-[#154734] bg-[#154734]'
-                          : 'border-slate-300'
-                      }`}
-                    >
-                      {selectedPlanId === 'advanced' && (
-                        <div className="w-2 h-2 rounded-full bg-amber-300" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Plan 3: Découverte 0 FCFA */}
-                  <div
-                    onClick={() => setSelectedPlanId('free')}
-                    className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                      selectedPlanId === 'free'
-                        ? 'border-[#154734] bg-emerald-50/40 ring-2 ring-emerald-200'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-sm font-bold text-slate-900 font-mono">0 FCFA</span>
-                        <span className="text-xs text-slate-500">/découverte</span>
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        1 classe test · Idéal pour tester sans engagement
-                      </div>
-                    </div>
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        selectedPlanId === 'free'
-                          ? 'border-[#154734] bg-[#154734]'
-                          : 'border-slate-300'
-                      }`}
-                    >
-                      {selectedPlanId === 'free' && <div className="w-2 h-2 rounded-full bg-amber-300" />}
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* Clean Bottom Note */}
-      <footer className="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-100">
-        ÉcoleConnect · Système de gestion & communication scolaire
+      {/* Footer */}
+      <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        ÉcoleConnect &bull; Système unifié d&apos;administration scolaire et suivi des familles
       </footer>
     </div>
   );

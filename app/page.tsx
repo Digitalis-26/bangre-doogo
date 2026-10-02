@@ -236,7 +236,7 @@ function MainAppContent() {
           </div>
 
           <div className="text-slate-400 text-center md:text-right">
-            Conforme aux normes MENAPLN &bull; Protection des données scolaires
+            Protection des données scolaires &bull; Sessions chiffrées
           </div>
         </div>
       </footer>

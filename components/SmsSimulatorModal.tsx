@@ -225,7 +225,7 @@ export function SmsSimulatorModal({ isOpen, onClose }: SmsSimulatorModalProps) {
             onClick={onClose}
             className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors"
           >
-            Fermer le simulateur
+            Fermer
           </button>
         </div>
       </div>

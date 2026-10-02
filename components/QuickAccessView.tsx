@@ -24,6 +24,7 @@ import {
   CalendarCheck,
   Send,
   Zap,
+  CreditCard,
 } from 'lucide-react';
 
 interface QuickAccessViewProps {
@@ -134,12 +135,24 @@ export function QuickAccessView({
       category: 'orientation',
     },
     {
+      id: 'scolarite',
+      title: 'Frais & Scolarité',
+      subtitle: 'Paiement en ligne (Orange Money, Wave, Moov), suivi des tranches & quittances',
+      icon: CreditCard,
+      badge: 'Paiement Sécurisé',
+      badgeColor: 'bg-amber-400 text-slate-950',
+      actionLabel: 'Gérer la scolarité',
+      pageName: 'Paiements & Quittances',
+      target: 'scolarite',
+      category: 'schooling',
+    },
+    {
       id: 'sms',
-      title: 'Simulateur SMS & Alertes',
+      title: 'Passerelle SMS & Alertes',
       subtitle: 'Diffusion d’urgences par SMS sans réseau internet ni data mobile',
       icon: Smartphone,
-      actionLabel: 'Lancer le test',
-      pageName: 'Simulateur Télécom SMS',
+      actionLabel: 'Ouvrir la passerelle',
+      pageName: 'Passerelle Télécom SMS',
       target: 'sms',
       category: 'communication',
     },

@@ -135,7 +135,7 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">
-              Simulateur d'économies
+              Calculateur d&apos;économies réelles & ROI
             </h3>
             <p className="text-xs text-slate-400">
               Comparatif direct face aux coûts papier et photocopies

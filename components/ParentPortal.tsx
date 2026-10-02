@@ -483,9 +483,9 @@ export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch, onN
                   </div>
                   <button
                     onClick={onOpenSmsSimulator}
-                    className="w-full py-2 px-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg transition-colors cursor-pointer text-center"
+                    className="w-full py-2 px-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                   >
-                    Tester la réception SMS sur mon numéro
+                    <span>Vérifier le canal de notification SMS officiel</span>
                   </button>
                 </div>
               </div>
@@ -518,8 +518,8 @@ export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch, onN
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-mono uppercase focus:ring-2 focus:ring-emerald-500"
                   required
                 />
-                <span className="text-[10px] text-slate-400">
-                  Exemples de démo : HORIZ-2026-088 ou HORIZ-2026-015
+                <span className="text-[10px] text-slate-500 font-medium">
+                  Matricule officiel figurant sur le bulletin de notes ou la fiche d&apos;inscription
                 </span>
               </div>
 
@@ -535,8 +535,8 @@ export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch, onN
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg font-mono uppercase focus:ring-2 focus:ring-emerald-500"
                   required
                 />
-                <span className="text-[10px] text-slate-400">
-                  Exemples de démo : LINK-8841 ou LINK-7720
+                <span className="text-[10px] text-slate-500 font-medium">
+                  Code de sécurité unique remis sous pli confidentiel par l&apos;établissement
                 </span>
               </div>
 
