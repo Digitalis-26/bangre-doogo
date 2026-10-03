@@ -55,7 +55,16 @@ interface SchoolContextType {
   authModalMode: 'login' | 'signup' | 'forgot';
   setAuthModalMode: (mode: 'login' | 'signup' | 'forgot') => void;
   login: (email: string, password?: string, role?: UserRole) => { success: boolean; message: string };
-  signup: (data: { name: string; email: string; phone: string; password?: string; role: UserRole; schoolId: string; title?: string }) => { success: boolean; message: string };
+  signup: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password?: string;
+    role: UserRole;
+    schoolId: string;
+    schoolName?: string;
+    title?: string;
+  }) => { success: boolean; message: string };
   logout: () => void;
   resetPassword: (email: string) => { success: boolean; message: string };
 
@@ -445,6 +454,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     password?: string;
     role: UserRole;
     schoolId: string;
+    schoolName?: string;
     title?: string;
   }) => {
     const cleanEmail = data.email.trim().toLowerCase();
@@ -452,6 +462,48 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       return { success: false, message: 'Un compte existe déjà avec cette adresse email.' };
     }
 
+    const explicitSchoolName = data.schoolName?.trim();
+    let targetSchoolId = data.schoolId || currentSchool.id;
+    let targetSchool = schools.find((s) => s.id === targetSchoolId);
+
+    // If explicit school name was provided and doesn't match targetSchool, or if targetSchool wasn't found in current state
+    if (explicitSchoolName && (!targetSchool || targetSchool.name.toLowerCase() !== explicitSchoolName.toLowerCase())) {
+      const matchByName = schools.find((s) => s.name.toLowerCase() === explicitSchoolName.toLowerCase());
+      if (matchByName) {
+        targetSchool = matchByName;
+        targetSchoolId = matchByName.id;
+      } else {
+        const generatedSchool: School = {
+          id: targetSchoolId.startsWith('school-') ? targetSchoolId : `school-${Date.now()}`,
+          name: explicitSchoolName,
+          city: 'Ouagadougou',
+          country: 'Burkina Faso',
+          phone: data.phone.trim() || '+226 25 00 00 00',
+          email: cleanEmail,
+          plan: 'main',
+          monthlyFee: 10000,
+          code: explicitSchoolName.slice(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'ECOL',
+          status: 'active',
+          cycles: ['Maternelle', 'Primaire', 'Collège'],
+          type: 'Privé laïc',
+          classesCount: 3,
+          studentsCount: 1,
+          parentsCount: 1,
+        };
+        targetSchool = generatedSchool;
+        targetSchoolId = generatedSchool.id;
+        setSchools((prev) => [...prev.filter((s) => s.id !== generatedSchool.id), generatedSchool]);
+      }
+    }
+
+    if (!targetSchool) {
+      targetSchool = {
+        ...currentSchool,
+        name: explicitSchoolName || currentSchool.name,
+      };
+    }
+
+    const resolvedSchoolName = explicitSchoolName || targetSchool.name;
     const newUserId = `user-${Date.now()}`;
     const newUser: User = {
       id: newUserId,
@@ -460,7 +512,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       phone: data.phone.trim(),
       password: data.password || 'Ecole2026!',
       role: data.role,
-      schoolId: data.schoolId || currentSchool.id,
+      schoolId: targetSchoolId,
       status: 'active',
       title:
         data.title ||
@@ -477,7 +529,136 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
     setUsers((prev) => [newUser, ...prev]);
     setCurrentUserId(newUserId);
     setCurrentRole(data.role);
-    if (data.schoolId) setCurrentSchoolId(data.schoolId);
+    setCurrentSchoolId(targetSchoolId);
+
+    // If registered as Parent, instantiate their child in this exact school with tuition and initial receipt
+    if (data.role === 'parent') {
+      const nameParts = data.name.trim().split(' ');
+      const parentLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : nameParts[0];
+      const childFirstName = 'Rayan';
+      const childFullName = `${childFirstName} ${parentLastName}`;
+      const childId = `student-${Date.now()}`;
+      const schoolCode = (targetSchool.code || resolvedSchoolName.slice(0, 4)).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'ECOL';
+      const childMatricule = `MAT-${schoolCode}-${Math.floor(100 + Math.random() * 900)}`;
+
+      // Locate or assign class
+      const schoolClasses = classes.filter((c) => c.schoolId === targetSchoolId);
+      const chosenClass = schoolClasses[0] || {
+        id: `class-${targetSchoolId}-1`,
+        name: '6ème A',
+      };
+
+      const newStudent: Student = {
+        id: childId,
+        schoolId: targetSchoolId,
+        academicYearId: activeAcademicYear.id,
+        matricule: childMatricule,
+        firstName: childFirstName,
+        lastName: parentLastName,
+        gender: 'M',
+        birthDate: '2013-05-14',
+        classId: chosenClass.id,
+        className: chosenClass.name,
+        verificationCode: childMatricule.slice(-4),
+        guardianPhone: data.phone.trim(),
+        guardianName: data.name.trim(),
+        status: 'enrolled',
+      };
+
+      const newRelation: ParentStudentRelation = {
+        id: `rel-${Date.now()}`,
+        parentId: newUserId,
+        parentName: data.name.trim(),
+        parentPhone: data.phone.trim(),
+        studentId: childId,
+        studentName: childFullName,
+        studentMatricule: childMatricule,
+        className: chosenClass.name,
+        relationType: 'Tuteur légal',
+        status: 'approved',
+        requestedAt: new Date().toISOString(),
+        approvedAt: new Date().toISOString(),
+      };
+
+      const newTuitionAccount: StudentTuitionAccount = {
+        id: `tuition-${Date.now()}`,
+        studentId: childId,
+        studentName: childFullName,
+        studentMatricule: childMatricule,
+        classId: chosenClass.id,
+        className: chosenClass.name,
+        schoolId: targetSchoolId,
+        guardianName: data.name.trim(),
+        guardianPhone: data.phone.trim(),
+        totalDue: 135000,
+        totalPaid: 45000,
+        balance: 90000,
+        status: 'partial',
+        installments: [
+          {
+            id: `inst-1-${Date.now()}`,
+            name: '1ère Tranche (Inscription)',
+            dueDate: '2025-10-15',
+            amount: 45000,
+            paidAmount: 45000,
+            status: 'paid',
+            paidDate: new Date().toISOString().split('T')[0],
+          },
+          {
+            id: `inst-2-${Date.now()}`,
+            name: '2ème Tranche',
+            dueDate: '2026-01-15',
+            amount: 45000,
+            paidAmount: 0,
+            status: 'pending',
+          },
+          {
+            id: `inst-3-${Date.now()}`,
+            name: '3ème Tranche',
+            dueDate: '2026-04-15',
+            amount: 45000,
+            paidAmount: 0,
+            status: 'pending',
+          },
+        ],
+        lastPaymentDate: new Date().toISOString().split('T')[0],
+        remindersCount: 0,
+      };
+
+      const initialReceiptNumber = `QUITT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const newTx: PaymentTransaction = {
+        id: `pay-${Date.now()}`,
+        receiptNumber: initialReceiptNumber,
+        schoolId: targetSchoolId,
+        schoolName: resolvedSchoolName,
+        schoolCity: targetSchool.city || 'Ouagadougou',
+        schoolPhone: targetSchool.phone || data.phone.trim(),
+        studentId: childId,
+        studentName: childFullName,
+        studentMatricule: childMatricule,
+        classId: chosenClass.id,
+        className: chosenClass.name,
+        amount: 45000,
+        paymentMethod: 'orange_money',
+        methodLabel: 'Orange Money',
+        methodRef: `OM-${Math.floor(100000 + Math.random() * 900000)}`,
+        installmentName: '1ère Tranche (Inscription)',
+        payerName: data.name.trim(),
+        payerPhone: data.phone.trim(),
+        recordedBy: `Paiement en ligne (${data.name.trim()})`,
+        notes: `Règlement d'inscription validé avec succès pour ${resolvedSchoolName}`,
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+        balanceAfter: 90000,
+      };
+
+      setStudents((prev) => [newStudent, ...prev]);
+      setRelations((prev) => [newRelation, ...prev]);
+      setTuitionAccounts((prev) => [newTuitionAccount, ...prev]);
+      setPaymentTransactions((prev) => [newTx, ...prev]);
+      setSelectedChildId(childId);
+    }
+
     setIsAuthenticated(true);
     setAuthModalOpen(false);
 
@@ -488,7 +669,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
 
     return {
       success: true,
-      message: `Compte personnel créé avec succès pour ${data.name}. Bienvenue sur ÉcoleConnect !`,
+      message: `Compte créé avec succès pour ${data.name} au sein de l'établissement ${targetSchool.name}.`,
     };
   };
 
@@ -543,18 +724,76 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
   // School Config
   const updateSchoolConfig = (schoolId: string, partial: Partial<School>) => {
     setSchools((prev) => prev.map((s) => (s.id === schoolId ? { ...s, ...partial } : s)));
+    if (partial.name) {
+      setPaymentTransactions((prev) =>
+        prev.map((tx) => (tx.schoolId === schoolId ? { ...tx, schoolName: partial.name! } : tx))
+      );
+    }
   };
 
   const createSchool = (data: Omit<School, 'id' | 'classesCount' | 'studentsCount' | 'parentsCount'>): School => {
+    const schoolId = `school-${Date.now()}`;
     const newSchool: School = {
       ...data,
-      id: `school-${Date.now()}`,
-      classesCount: 0,
-      studentsCount: 0,
-      parentsCount: 0,
+      id: schoolId,
+      classesCount: 3,
+      studentsCount: 2,
+      parentsCount: 2,
     };
+
+    // Create academic year for this new school
+    const newYear: AcademicYear = {
+      id: `year-${schoolId}`,
+      schoolId: schoolId,
+      name: '2025-2026',
+      startDate: '2025-10-01',
+      endDate: '2026-06-30',
+      status: 'active',
+      isDefault: true,
+    };
+
+    // Create initial classes for this school
+    const class1: SchoolClass = {
+      id: `class-${schoolId}-1`,
+      schoolId: schoolId,
+      academicYearId: newYear.id,
+      name: '6ème A',
+      gradeLevel: '6ème',
+      division: 'A',
+      teacherId: 'user-teacher-1',
+      teacherName: 'M. Sawadogo Marc',
+      studentsCount: 1,
+      room: 'Bâtiment Principal - Salle 101',
+    };
+    const class2: SchoolClass = {
+      id: `class-${schoolId}-2`,
+      schoolId: schoolId,
+      academicYearId: newYear.id,
+      name: 'CM2 A',
+      gradeLevel: 'CM2',
+      division: 'A',
+      teacherId: 'user-teacher-1',
+      teacherName: 'Mme Kaboré Salimata',
+      studentsCount: 1,
+      room: 'Bâtiment Primaire - Salle 2',
+    };
+    const class3: SchoolClass = {
+      id: `class-${schoolId}-3`,
+      schoolId: schoolId,
+      academicYearId: newYear.id,
+      name: '3ème B',
+      gradeLevel: '3ème',
+      division: 'B',
+      teacherId: 'user-teacher-1',
+      teacherName: 'M. Ousmane Barry',
+      studentsCount: 0,
+      room: 'Bâtiment Principal - Salle 204',
+    };
+
     setSchools((prev) => [...prev, newSchool]);
-    setCurrentSchoolId(newSchool.id);
+    setAcademicYears((prev) => [newYear, ...prev]);
+    setClasses((prev) => [class1, class2, class3, ...prev]);
+    setCurrentSchoolId(schoolId);
     return newSchool;
   };
 

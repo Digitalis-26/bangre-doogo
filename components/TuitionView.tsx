@@ -150,12 +150,28 @@ export function TuitionView() {
     });
   }, [schoolAccounts, selectedClassFilter, selectedStatusFilter, searchQuery]);
 
+  // Transactions belonging strictly to the current establishment
+  const schoolPaymentTransactions = useMemo(() => {
+    return paymentTransactions.filter((p) => p.schoolId === currentSchool.id);
+  }, [paymentTransactions, currentSchool.id]);
+
   // -------------------------------------------------------------
   // PARENT VIEW COMPUTED DATA
   // -------------------------------------------------------------
   const currentParentAccount = useMemo(() => {
-    return tuitionAccounts.find((a) => a.studentId === selectedChildStudentId) || tuitionAccounts[0];
-  }, [tuitionAccounts, selectedChildStudentId]);
+    if (selectedChildStudentId) {
+      const found = tuitionAccounts.find((a) => a.studentId === selectedChildStudentId);
+      if (found) return found;
+    }
+    const myChildIds = myChildren.map((c) => c.id);
+    const myAcc = tuitionAccounts.find((a) => myChildIds.includes(a.studentId));
+    if (myAcc) return myAcc;
+
+    const schoolAcc = tuitionAccounts.find((a) => a.schoolId === currentSchool.id);
+    if (schoolAcc) return schoolAcc;
+
+    return null;
+  }, [tuitionAccounts, selectedChildStudentId, myChildren, currentSchool.id]);
 
   const currentChildTransactions = useMemo(() => {
     if (!currentParentAccount) return [];
@@ -693,7 +709,7 @@ export function TuitionView() {
                     : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'
                 }`}
               >
-                📑 Journal des Encaissements & Quittances ({paymentTransactions.length})
+                📑 Journal des Encaissements & Quittances ({schoolPaymentTransactions.length})
               </button>
               <button
                 onClick={() => setAdminSubTab('reminders')}
@@ -903,7 +919,7 @@ export function TuitionView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {paymentTransactions.map((tx) => (
+                    {schoolPaymentTransactions.map((tx) => (
                       <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4 font-mono font-black text-[#154734]">
                           {tx.receiptNumber}

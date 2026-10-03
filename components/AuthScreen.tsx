@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSchool } from '@/context/SchoolContext';
+import { AnimatedGreenGoldBackground } from './AnimatedGreenGoldBackground';
 import {
   Eye,
   EyeOff,
@@ -9,7 +10,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Building2,
-  ShieldCheck,
   Lock,
   UserCheck,
   GraduationCap,
@@ -114,6 +114,7 @@ export function AuthScreen() {
       password,
       role,
       schoolId: targetSchoolId,
+      schoolName: trimmedSchool,
     });
 
     setFeedback(res);
@@ -134,41 +135,32 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 flex flex-col justify-between text-slate-900">
-      {/* Top Header */}
-      <header className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-200 bg-white">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full border-2 border-[#154734] bg-emerald-50 flex items-center justify-center text-[#154734] font-black text-sm shadow-xs">
-            EC
-          </div>
-          <div>
-            <span className="text-lg font-black text-[#154734] tracking-tight flex items-center gap-1">
-              <span>ÉcoleConnect</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            </span>
-            <p className="text-[10px] text-slate-500 font-medium">Portail Scolaire Officiel</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-          <ShieldCheck className="w-4 h-4 text-emerald-700" />
-          <span className="hidden sm:inline">Chiffrement SSL 256-bit Sécurisé</span>
-        </div>
-      </header>
+    <div className="min-h-screen w-full relative flex flex-col justify-between text-slate-900 overflow-hidden">
+      {/* Animated Vert-Or Background */}
+      <AnimatedGreenGoldBackground />
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
         <div className="w-full max-w-md my-auto">
           {/* Header Title */}
           <div className="text-center mb-6">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <div className="inline-flex items-center justify-center gap-2.5 mb-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/15 shadow-lg shadow-black/20">
+              <div className="w-9 h-9 rounded-xl border border-amber-400/50 bg-gradient-to-br from-[#154734] to-[#0a281c] flex items-center justify-center text-amber-300 font-black text-sm shadow-inner">
+                EC
+              </div>
+              <span className="text-2xl font-black text-white tracking-tight flex items-center gap-1 drop-shadow-sm">
+                <span>ÉcoleConnect</span>
+                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-md">
               {authModalMode === 'signup'
                 ? 'Créer un compte'
                 : authModalMode === 'forgot'
                 ? 'Mot de passe oublié'
                 : 'Connexion'}
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-emerald-100/90 mt-1 font-medium drop-shadow-xs">
               {authModalMode === 'signup'
                 ? 'Remplissez vos informations pour rejoindre votre établissement.'
                 : authModalMode === 'forgot'
@@ -177,8 +169,8 @@ export function AuthScreen() {
             </p>
           </div>
 
-          {/* Form Card */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-5 relative overflow-hidden">
+          {/* Form Card with Premium Glass & Shadows */}
+          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl border border-white/70 shadow-2xl shadow-emerald-950/40 p-6 sm:p-8 space-y-5 relative overflow-hidden">
             {/* Top Accent Strip Vert-Or */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#154734] via-amber-400 to-[#154734]" />
 
@@ -521,7 +513,7 @@ export function AuthScreen() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+      <footer className="w-full py-4 text-center text-xs text-emerald-200/80 border-t border-emerald-900/40 bg-black/25 backdrop-blur-md relative z-10">
         ÉcoleConnect &bull; Système unifié d&apos;administration scolaire et suivi des familles
       </footer>
     </div>

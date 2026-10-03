@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PaymentTransaction } from '@/lib/types';
+import { useSchool } from '@/context/SchoolContext';
 import {
   X,
   Printer,
@@ -45,7 +46,23 @@ function numberToFrenchWords(n: number): string {
 }
 
 export function OfficialReceiptModal({ transaction, onClose }: OfficialReceiptModalProps) {
+  const { currentSchool, schools } = useSchool();
   if (!transaction) return null;
+
+  // Accurately resolve establishment name, city and telephone
+  const txSchool = schools.find((s) => s.id === transaction.schoolId);
+  const displaySchoolName =
+    (transaction.schoolId === currentSchool.id || !transaction.schoolId)
+      ? currentSchool.name
+      : (txSchool?.name || transaction.schoolName || currentSchool.name);
+  const displaySchoolCity =
+    (transaction.schoolId === currentSchool.id || !transaction.schoolId)
+      ? currentSchool.city
+      : (txSchool?.city || transaction.schoolCity || currentSchool.city);
+  const displaySchoolPhone =
+    (transaction.schoolId === currentSchool.id || !transaction.schoolId)
+      ? currentSchool.phone
+      : (txSchool?.phone || transaction.schoolPhone || currentSchool.phone);
 
   const handlePrint = () => {
     window.print();
@@ -53,7 +70,7 @@ export function OfficialReceiptModal({ transaction, onClose }: OfficialReceiptMo
 
   const shareReceiptWhatsApp = () => {
     const text = `*QUITTANCE DE PAIEMENT SCOLARITÉ N° ${transaction.receiptNumber}*\n` +
-      `Établissement : ${transaction.schoolName}\n` +
+      `Établissement : ${displaySchoolName}\n` +
       `Élève : ${transaction.studentName} (Matricule: ${transaction.studentMatricule})\n` +
       `Classe : ${transaction.className}\n` +
       `Montant versé : ${transaction.amount.toLocaleString()} FCFA\n` +
@@ -109,15 +126,15 @@ export function OfficialReceiptModal({ transaction, onClose }: OfficialReceiptMo
             <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left">
               <div>
                 <div className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  RÉPUBLIQUE DU BURKINA FASO · MINISTÈRE DE L'ÉDUCATION NATIONALE
+                  RÉCÉPISSÉ & QUITTANCE OFFICIELLE DE PAIEMENT SCOLARITÉ
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-[#154734] mt-1 tracking-tight">
-                  {transaction.schoolName}
+                  {displaySchoolName}
                 </h2>
                 <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                  <span>{transaction.schoolCity}</span>
+                  <span>{displaySchoolCity}</span>
                   <span>·</span>
-                  <span>Tél : {transaction.schoolPhone}</span>
+                  <span>Tél : {displaySchoolPhone}</span>
                   <span>·</span>
                   <span className="text-emerald-700 font-semibold">Service Comptabilité & Scolarité</span>
                 </div>
