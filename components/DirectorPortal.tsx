@@ -63,7 +63,7 @@ export function DirectorPortal({ onOpenAiAssistant, onOpenPricing }: DirectorPor
       authorRole: 'Direction',
       title: annTitle,
       content: annContent,
-      smsVersion: annSms || `[${currentSchool.code}] ${annTitle}. Détails sur ÉcoleConnect.`,
+      smsVersion: annSms || `[${currentSchool.code}] ${annTitle}. Détails sur MON ÉCOLE.`,
       priority: annPriority,
       category: annCategory,
       totalTargets: currentSchool.parentsCount,

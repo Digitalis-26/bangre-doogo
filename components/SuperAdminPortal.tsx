@@ -33,7 +33,7 @@ export function SuperAdminPortal() {
               <span>Console Super Administrateur SaaS B2B</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Gestionnaire Multi-Établissements ÉcoleConnect
+              Gestionnaire Multi-Établissements MON ÉCOLE
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
               Supervisez les établissements pilotes, la facturation mensuelle B2B en FCFA et l'intégrité de la séparation des données scolaires.

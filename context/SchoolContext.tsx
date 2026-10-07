@@ -362,7 +362,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
           : currentRole === 'secretary'
           ? 'Secrétariat Scolaire'
           : 'Administrateur',
-      email: `${currentRole}@ecoleconnect.bf`,
+      email: `${currentRole}@monecole.bf`,
       phone: '+226 70 00 00 00',
       role: currentRole,
       schoolId: currentSchool.id,
@@ -1424,7 +1424,7 @@ export function SchoolProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Compte élève introuvable.");
     }
 
-    const defaultMsg = `Avis ${currentSchool.name} : Rappel pour la scolarité de ${account.studentName} (${account.className}). Reste dû : ${account.balance.toLocaleString()} FCFA. Règlement possible par Orange Money, Moov ou Wave sur ÉcoleConnect. Merci.`;
+    const defaultMsg = `Avis ${currentSchool.name} : Rappel pour la scolarité de ${account.studentName} (${account.className}). Reste dû : ${account.balance.toLocaleString()} FCFA. Règlement possible par Orange Money, Moov ou Wave sur MON ÉCOLE. Merci.`;
     const message = customMessage || defaultMsg;
 
     const newLog: TuitionReminderLog = {

@@ -133,7 +133,7 @@ export function SchoolSearchView() {
   const getWhatsAppLink = (school: School, studentName?: string, grade?: string) => {
     const rawNumber = (school.whatsapp || school.phone).replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Bonjour Direction de ${school.name}, je vous contacte via ÉcoleConnect au sujet d'une demande de pré-inscription/renseignement pour l'élève ${studentName || '[Nom de l\'élève]'} en classe de ${grade || '[Classe souhaitée]'}. Pouvez-vous nous communiquer les formalités et dates de rentrée ? Merci.`
+      `Bonjour Direction de ${school.name}, je vous contacte via MON ÉCOLE au sujet d'une demande de pré-inscription/renseignement pour l'élève ${studentName || '[Nom de l\'élève]'} en classe de ${grade || '[Classe souhaitée]'}. Pouvez-vous nous communiquer les formalités et dates de rentrée ? Merci.`
     );
     return `https://wa.me/${rawNumber}?text=${text}`;
   };
@@ -151,7 +151,7 @@ export function SchoolSearchView() {
             Trouver un Nouvel Établissement Scolaire
           </h1>
           <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-            Explorez les écoles partenaires certifiées ÉcoleConnect : cycles proposés, grille tarifaire transparente, services (cantine, transport, internat) et demande directe de pré-inscription.
+            Explorez les écoles partenaires certifiées MON ÉCOLE : cycles proposés, grille tarifaire transparente, services (cantine, transport, internat) et demande directe de pré-inscription.
           </p>
         </div>
 
@@ -388,7 +388,7 @@ export function SchoolSearchView() {
 
                       {/* Brief description */}
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                        {school.description || 'Établissement conventionné partenaire de la plateforme ÉcoleConnect.'}
+                        {school.description || 'Établissement conventionné partenaire de la plateforme MON ÉCOLE.'}
                       </p>
 
                       {/* Key Indicators: Fees & Exam Success */}
@@ -625,7 +625,7 @@ export function SchoolSearchView() {
                 </span>
               </div>
               <p className="text-[11px] text-slate-500">
-                Paiement échelonné en 3 à 4 tranches disponible. Les frais incluent les supports didactiques et l'accès à la plateforme ÉcoleConnect.
+                Paiement échelonné en 3 à 4 tranches disponible. Les frais incluent les supports didactiques et l'accès à la plateforme MON ÉCOLE.
               </p>
             </div>
 

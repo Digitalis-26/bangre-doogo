@@ -333,7 +333,7 @@ export function QuickAccessView({
             <div className="relative flex-1 rounded-2xl overflow-hidden shadow-lg border-2 border-white bg-slate-900 group min-h-[350px] sm:min-h-[420px]">
               <Image
                 src="/acces_rapide_woman.jpg"
-                alt="Éducatrice et conseillère ÉcoleConnect"
+                alt="Éducatrice et conseillère MON ÉCOLE"
                 fill
                 className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
                 sizes="(max-width: 768px) 100vw, 33vw"

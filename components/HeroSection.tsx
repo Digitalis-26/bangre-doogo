@@ -5,7 +5,6 @@ import { useSchool } from '@/context/SchoolContext';
 import {
   GraduationCap,
   Smartphone,
-  ShieldCheck,
   CheckCircle2,
   Users,
   Bell,
@@ -44,20 +43,6 @@ export function HeroSection({
       <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 max-w-4xl space-y-6">
-        {/* Role Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>
-            {currentRole === 'parent' && 'Espace Famille Sécurisé'}
-            {currentRole === 'teacher' && 'Espace Pédagogique Enseignant'}
-            {(currentRole === 'director' || currentRole === 'secretary') && "Direction de l'Établissement"}
-            {currentRole === 'super_admin' && 'Console Super Admin SaaS'}
-            {currentRole === 'student' && 'Espace Élève Consultatif'}
-          </span>
-          <span className="text-emerald-500/60">·</span>
-          <span className="text-white font-medium">{currentUser.name}</span>
-        </div>
-
         {/* Dynamic Role Headline & Subtitle */}
         {currentRole === 'parent' && (
           <div className="space-y-2">
@@ -105,7 +90,7 @@ export function HeroSection({
         {currentRole === 'super_admin' && (
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-              Console Super Administrateur SaaS ÉcoleConnect.
+              Console Super Administrateur SaaS MON ÉCOLE.
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               Supervision des écoles partenaires, forfaits souscrits, distribution SMS et configuration globale.

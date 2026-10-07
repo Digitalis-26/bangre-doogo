@@ -77,7 +77,7 @@ export function OfficialReceiptModal({ transaction, onClose }: OfficialReceiptMo
       `Mode : ${transaction.methodLabel} (Réf: ${transaction.methodRef || 'N/A'})\n` +
       `Tranche : ${transaction.installmentName}\n` +
       `Reste à devoir : ${transaction.balanceAfter.toLocaleString()} FCFA\n` +
-      `Statut : Validé et Enregistré sur ÉcoleConnect.`;
+      `Statut : Validé et Enregistré sur MON ÉCOLE.`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };

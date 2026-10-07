@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       // Fallback clean template if no API key configured
       const fallbackTitle = `Note d'information : ${topic}`;
-      const fallbackBody = `Chers parents d'élèves,\n\nNous vous informons par la présente de ce qui suit concernant ${topic}.\n${details ? `\nPrécisions : ${details}\n` : ""}\nL'établissement ${schoolName || "ÉcoleConnect"} reste à votre disposition pour toute précision complémentaire.\n\nCordialement,\nLa Direction et l'équipe pédagogique.`;
-      const fallbackSms = `[${schoolName || "ECOLE"}] Info importante : ${topic}. Merci de consulter l'application ÉcoleConnect.`;
+      const fallbackBody = `Chers parents d'élèves,\n\nNous vous informons par la présente de ce qui suit concernant ${topic}.\n${details ? `\nPrécisions : ${details}\n` : ""}\nL'établissement ${schoolName || "MON ÉCOLE"} reste à votre disposition pour toute précision complémentaire.\n\nCordialement,\nLa Direction et l'équipe pédagogique.`;
+      const fallbackSms = `[${schoolName || "ECOLE"}] Info importante : ${topic}. Merci de consulter l'application MON ÉCOLE.`;
       
       return NextResponse.json({
         title: fallbackTitle,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `Tu es l'assistant de communication officiel d'un établissement scolaire en Afrique de l'Ouest (plateforme ÉcoleConnect).
+    const prompt = `Tu es l'assistant de communication officiel d'un établissement scolaire en Afrique de l'Ouest (plateforme MON ÉCOLE).
 Rédige une communication claire, bienveillante, professionnelle et compréhensible par tous les parents d'élèves.
 
 Éléments fournis :
@@ -69,7 +69,7 @@ Réponds UNIQUEMENT sous forme d'un objet JSON strict avec 3 champs sans markdow
       {
         title: `Communication officielle : Information scolaire`,
         content: `Chers parents d'élèves,\n\nNous vous prions de bien vouloir prendre note de cette communication officielle concernant l'organisation scolaire. Votre collaboration habituelle pour la réussite de nos élèves est vivement appréciée.\n\nLa Direction de l'établissement.`,
-        smsVersion: `[Info École] Nouvelle annonce publiée. Merci de consulter l'application ÉcoleConnect.`,
+        smsVersion: `[Info École] Nouvelle annonce publiée. Merci de consulter l'application MON ÉCOLE.`,
       },
       { status: 200 }
     );

@@ -173,7 +173,7 @@ export function ParentPortal({ onOpenSmsSimulator, onNavigateToSchoolSearch, onN
                   Changement d'établissement ou orientation rentrée 2026-2027 ?
                 </span>
                 <span className="text-[11px] text-slate-600 block">
-                  Consultez les écoles partenaires certifiées ÉcoleConnect, comparez les tarifs et déposez une demande de pré-inscription en ligne.
+                  Consultez les écoles partenaires certifiées MON ÉCOLE, comparez les tarifs et déposez une demande de pré-inscription en ligne.
                 </span>
               </div>
             </div>

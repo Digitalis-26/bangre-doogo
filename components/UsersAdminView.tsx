@@ -533,7 +533,7 @@ export function UsersAdminView() {
             <div>
               <p className="font-bold">Certificat d&apos;intégrité numérique des quittances</p>
               <p className="text-[11px] text-emerald-800 mt-0.5">
-                Chaque quittance de paiement émise par ÉcoleConnect porte une signature cryptographique inviolable et un code QR de vérification opposable aux tiers.
+                Chaque quittance de paiement émise par MON ÉCOLE porte une signature cryptographique inviolable et un code QR de vérification opposable aux tiers.
               </p>
             </div>
           </div>
@@ -578,7 +578,7 @@ export function UsersAdminView() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="moussa.o@ecoleconnect.bf"
+                  placeholder="moussa.o@monecole.bf"
                   className="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                 />
               </div>

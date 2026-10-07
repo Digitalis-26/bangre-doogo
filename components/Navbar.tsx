@@ -139,7 +139,7 @@ export function Navbar({
       <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-bold text-white tracking-wide">ÉcoleConnect 🇧🇫</span>
+          <span className="font-bold text-white tracking-wide">MON ÉCOLE 🇧🇫</span>
           <span className="text-slate-500 hidden sm:inline">|</span>
           <span className="text-slate-300 truncate max-w-xs sm:max-w-md font-medium">
             {currentSchool.name} ({currentSchool.city})

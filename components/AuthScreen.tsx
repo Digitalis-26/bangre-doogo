@@ -146,10 +146,10 @@ export function AuthScreen() {
           <div className="text-center mb-6">
             <div className="inline-flex items-center justify-center gap-2.5 mb-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/15 shadow-lg shadow-black/20">
               <div className="w-9 h-9 rounded-xl border border-amber-400/50 bg-gradient-to-br from-[#154734] to-[#0a281c] flex items-center justify-center text-amber-300 font-black text-sm shadow-inner">
-                EC
+                ME
               </div>
               <span className="text-2xl font-black text-white tracking-tight flex items-center gap-1 drop-shadow-sm">
-                <span>ÉcoleConnect</span>
+                <span>MON ÉCOLE</span>
                 <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
               </span>
             </div>
@@ -514,7 +514,7 @@ export function AuthScreen() {
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-emerald-200/80 border-t border-emerald-900/40 bg-black/25 backdrop-blur-md relative z-10">
-        ÉcoleConnect &bull; Système unifié d&apos;administration scolaire et suivi des familles
+        MON ÉCOLE &bull; Système unifié d&apos;administration scolaire et suivi des familles
       </footer>
     </div>
   );

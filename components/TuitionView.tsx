@@ -272,7 +272,7 @@ export function TuitionView() {
 
   const handleOpenReminderModal = (account: StudentTuitionAccount) => {
     setReminderTargetAccount(account);
-    const defaultMsg = `Avis ${currentSchool.name} : Rappel pour la scolarité de ${account.studentName} (${account.className}). Reste dû : ${account.balance.toLocaleString()} FCFA. Règlement direct via Orange Money, Moov ou Wave sur votre espace ÉcoleConnect. Merci.`;
+    const defaultMsg = `Avis ${currentSchool.name} : Rappel pour la scolarité de ${account.studentName} (${account.className}). Reste dû : ${account.balance.toLocaleString()} FCFA. Règlement direct via Orange Money, Moov ou Wave sur votre espace MON ÉCOLE. Merci.`;
     setReminderCustomMessage(defaultMsg);
     setReminderChannel('sms');
     setReminderFeedback(null);

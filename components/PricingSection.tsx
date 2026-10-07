@@ -176,7 +176,7 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
                 </span>
               </div>
               <div className="flex items-center justify-between pb-1 border-b border-slate-800">
-                <span>Abonnement ÉcoleConnect (Offre principale 10 mois) :</span>
+                <span>Abonnement MON ÉCOLE (Offre principale 10 mois) :</span>
                 <span className="font-mono text-emerald-400">
                   {ecoleConnectMainPlanYearly.toLocaleString('fr-FR')} FCFA / an
                 </span>

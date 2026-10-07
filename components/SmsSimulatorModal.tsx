@@ -97,7 +97,7 @@ export function SmsSimulatorModal({ isOpen, onClose }: SmsSimulatorModalProps) {
                 Au Burkina Faso et dans la sous-région, environ 30% des parents n'ont pas de connexion internet mobile permanente.
               </p>
               <p className="text-slate-600 leading-relaxed">
-                ÉcoleConnect permet donc de diffuser gratuitement via l'application web pour les parents connectés, tout en conservant une passerelle SMS pour les alertes d'absences le matin même et les convocations urgentes.
+                MON ÉCOLE permet donc de diffuser gratuitement via l'application web pour les parents connectés, tout en conservant une passerelle SMS pour les alertes d'absences le matin même et les convocations urgentes.
               </p>
             </div>
 

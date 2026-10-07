@@ -94,7 +94,7 @@ export function AiAnnouncementModal({ isOpen, onClose, onApplyDraft }: AiAnnounc
       setGeneratedDraft({
         title: `Communication officielle : ${topic}`,
         content: `Chers parents d'élèves,\n\nNous vous prions de bien vouloir noter l'information suivante concernant ${topic}.\n\n${details ? `Précisions : ${details}\n\n` : ''}Nous vous remercions pour votre collaboration habituelle.\n\nLa Direction de ${currentSchool.name}.`,
-        smsVersion: `[${currentSchool.code || 'ECOLE'}] Info : ${topic}. Détails sur ÉcoleConnect.`,
+        smsVersion: `[${currentSchool.code || 'ECOLE'}] Info : ${topic}. Détails sur MON ÉCOLE.`,
       });
     } finally {
       setLoading(false);

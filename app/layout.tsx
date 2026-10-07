@@ -2,16 +2,16 @@ import type {Metadata} from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ÉcoleConnect — Plateforme de communication école-parents & suivi scolaire',
+  title: 'MON ÉCOLE — Plateforme de communication école-parents & suivi scolaire',
   description: 'Solution SaaS pour les établissements scolaires en Afrique : communication parents-école, suivi des absences, paiement en ligne des frais de scolarité via moyens locaux (Orange Money, Wave, Moov) et délivrance de quittances officielles.',
   openGraph: {
-    title: 'ÉcoleConnect — Plateforme de communication école-parents & scolarité',
+    title: 'MON ÉCOLE — Plateforme de communication école-parents & scolarité',
     description: 'Solution SaaS pour faciliter la communication entre établissements scolaires, enseignants et parents d\'élèves.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ÉcoleConnect — Plateforme de communication école-parents & scolarité',
+    title: 'MON ÉCOLE — Plateforme de communication école-parents & scolarité',
     description: 'Solution SaaS pour faciliter la communication entre établissements scolaires, enseignants et parents d\'élèves.',
   },
 };

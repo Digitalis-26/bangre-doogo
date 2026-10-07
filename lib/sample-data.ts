@@ -313,7 +313,7 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-superadmin-1',
     name: 'Équipe SaaS Stratège',
-    email: 'support@ecoleconnect.africa',
+    email: 'support@monecole.africa',
     phone: '+226 75 00 11 22',
     role: 'super_admin',
     schoolId: 'all',
@@ -563,7 +563,7 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
     authorRole: 'Direction',
     title: 'Assemblée Générale des Parents d\'Élèves (Rentrée 2026-2027)',
     content:
-      'Chers parents d\'élèves,\n\nLa Direction et le bureau APE ont le plaisir de vous convier à l\'Assemblée Générale annuelle qui se tiendra ce samedi à 09h00 précises dans la cour d\'honneur de l\'établissement.\n\nOrdre du jour :\n1. Bilan académique de l\'année écoulée et objectifs CEP/BEPC.\n2. Présentation du protocole de communication via la plateforme ÉcoleConnect.\n3. Projets d\'aménagements et questions diverses.\n\nVotre présence massive est vivement souhaitée pour le rayonnement de notre école.',
+      'Chers parents d\'élèves,\n\nLa Direction et le bureau APE ont le plaisir de vous convier à l\'Assemblée Générale annuelle qui se tiendra ce samedi à 09h00 précises dans la cour d\'honneur de l\'établissement.\n\nOrdre du jour :\n1. Bilan académique de l\'année écoulée et objectifs CEP/BEPC.\n2. Présentation du protocole de communication via la plateforme MON ÉCOLE.\n3. Projets d\'aménagements et questions diverses.\n\nVotre présence massive est vivement souhaitée pour le rayonnement de notre école.',
     smsVersion:
       '[GS HORIZON] AG des parents ce Samedi à 09h00 dans la cour d\'honneur. Présentation du bilan & plateforme. Présence vivement souhaitée.',
     priority: 'urgent',
@@ -1199,7 +1199,7 @@ export const INITIAL_TUITION_REMINDERS: import('./types').TuitionReminderLog[] =
     parentPhone: '+226 78 90 12 34',
     amountDue: 40000,
     dueDate: '2026-01-15',
-    message: 'Rappel Horizon d\'Excellence : La 1ère tranche de scolarité de 40 000 FCFA pour Ibrahim Sawadogo était due le 15/01. Règlement direct via Orange Money, Moov ou Wave sur votre espace ÉcoleConnect.',
+    message: 'Rappel Horizon d\'Excellence : La 1ère tranche de scolarité de 40 000 FCFA pour Ibrahim Sawadogo était due le 15/01. Règlement direct via Orange Money, Moov ou Wave sur votre espace MON ÉCOLE.',
     channel: 'sms',
     sentAt: '2026-02-10T10:30:00Z',
     status: 'delivered',
